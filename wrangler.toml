@@ -19,3 +19,7 @@ compatibility_date = "2023-12-01"
 
 # [ai]
 # binding = "AI"
+
+[vars]
+CLERK_SECRET_KEY = "sk_test_mbsqWmyUWlAs6iickJe1gzD0WQEyVrRfP4k5PTIs0X"
+CLERK_PUBLISHABLE_KEY = "pk_test_Y29oZXJlbnQtc25haWwtNi5jbGVyay5hY2NvdW50cy5kZXYk"
