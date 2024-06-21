@@ -1,9 +1,11 @@
 import { Hono } from "hono";
-import CourseController from "./controller/CourseController";
-import { clerkMiddleware } from "@hono/clerk-auth";
+import CourseController from "./courses";
 
-const app = new Hono().basePath("/api");
-app.use("*", clerkMiddleware());
+export type Env = {
+  DATABASE_URL: string;
+};
+
+const app = new Hono<{ Bindings: Env }>().basePath("/api");
 
 const routes = app.route("/courses", CourseController);
 
