@@ -125,4 +125,62 @@ Course.post(
   }
 );
 
+/**
+ * 講座タイトル編集API
+ */
+Course.put(
+  "/:course_id",
+  zValidator(
+    "json",
+    insertCourseSchema.pick({
+      title: true,
+    })
+  ),
+  zValidator(
+    "param",
+    z.object({
+      course_id: z.string().optional(),
+    })
+  ),
+  clerkMiddleware(),
+  async (c) => {
+    // 認証チェック
+    const auth = getAuth(c);
+    if (!auth?.userId) {
+      return c.json({ error: Messages.ERR_UNAUTHORIZED }, 401);
+    }
+    if (auth.userId !== c.env.ADMIN_USER_ID) {
+      return c.json({ error: Messages.MSG_ERR_ADMIN_UNAUTHORIZED }, 401);
+    }
+
+    // 講座の存在チェック
+    const { course_id: courseId } = c.req.valid("param");
+    if (!courseId) {
+      return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
+    }
+
+    // バリデーションチェック
+    const values = c.req.valid("json");
+    if (!values.title) {
+      return c.json({ error: Messages.MSG_ERR_TITLE_REQUIRED }, 400);
+    }
+    if (values.title.length >= 100) {
+      return c.json({ error: Messages.MSG_ERR_TITLE_LIMIT }, 400);
+    }
+
+    // データベースへの更新
+    const db = getDbConnection(c.env.DATABASE_URL);
+    const [data] = await db
+      .update(course)
+      .set({
+        title: values.title,
+        updatedAt: new Date(),
+      })
+      .where(eq(course.id, courseId))
+      .returning();
+
+    return c.json({ data });
+  }
+);
+
 export default Course;
