@@ -6,19 +6,17 @@ import { Env } from "..";
 import { and, eq } from "drizzle-orm";
 import { Messages } from "../sharedInfo/message";
 
-const CourseController = new Hono<{ Bindings: Env }>();
+const Course = new Hono<{ Bindings: Env }>();
 
 /**
  * 講座一覧取得API
  */
-CourseController.get("/", clerkMiddleware(), async (c) => {
-  // ユーザーの認証チェック
+Course.get("/", clerkMiddleware(), async (c) => {
   const auth = getAuth(c);
   if (!auth?.userId) {
     return c.json({ error: Messages.ERR_UNAUTHORIZED }, 401);
   }
 
-  // 講座の一覧を取得する
   const db = getDbConnection(c.env.DATABASE_URL);
   const result = await db
     .select()
@@ -31,17 +29,14 @@ CourseController.get("/", clerkMiddleware(), async (c) => {
 /**
  * 講座取得API
  */
-CourseController.get("/:id", clerkMiddleware(), async (c) => {
-  // ユーザーの認証チェック
+Course.get("/:id", clerkMiddleware(), async (c) => {
   const auth = getAuth(c);
   if (!auth?.userId) {
     return c.json({ error: Messages.ERR_UNAUTHORIZED }, 401);
   }
 
-  // 講座のIDを取得する
   const id = c.req.param("id");
 
-  // 講座の詳細を取得する
   const db = getDbConnection(c.env.DATABASE_URL);
   const result = await db
     .select()
@@ -54,7 +49,6 @@ CourseController.get("/:id", clerkMiddleware(), async (c) => {
       )
     );
 
-  // 講座が見つからない場合は404を返す
   if (!result) {
     return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
   }
@@ -62,4 +56,4 @@ CourseController.get("/:id", clerkMiddleware(), async (c) => {
   return c.json({ result });
 });
 
-export default CourseController;
+export default Course;
