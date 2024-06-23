@@ -1,10 +1,13 @@
 import { clerkMiddleware, getAuth } from "@hono/clerk-auth";
 import { Hono } from "hono";
 import { getDbConnection } from "../../db/drizzle";
-import { course } from "../../db/schema";
+import { course, insertCourseSchema } from "../../db/schema";
 import { Env } from "..";
 import { and, eq } from "drizzle-orm";
 import { Messages } from "../sharedInfo/message";
+import { zValidator } from "@hono/zod-validator";
+import { z } from "zod";
+import { createId } from "@paralleldrive/cuid2";
 
 const Course = new Hono<{ Bindings: Env }>();
 
@@ -12,11 +15,13 @@ const Course = new Hono<{ Bindings: Env }>();
  * 講座一覧取得API
  */
 Course.get("/", clerkMiddleware(), async (c) => {
+  // 認証チェック
   const auth = getAuth(c);
   if (!auth?.userId) {
     return c.json({ error: Messages.ERR_UNAUTHORIZED }, 401);
   }
 
+  // データベースから取得
   const db = getDbConnection(c.env.DATABASE_URL);
   const data = await db
     .select()
@@ -29,31 +34,95 @@ Course.get("/", clerkMiddleware(), async (c) => {
 /**
  * 講座取得API
  */
-Course.get("/:course_id", clerkMiddleware(), async (c) => {
-  const auth = getAuth(c);
-  if (!auth?.userId) {
-    return c.json({ error: Messages.ERR_UNAUTHORIZED }, 401);
+Course.get(
+  "/:course_id",
+  zValidator(
+    "param",
+    z.object({
+      course_id: z.string().optional(),
+    })
+  ),
+  clerkMiddleware(),
+  async (c) => {
+    // 認証チェック
+    const auth = getAuth(c);
+    if (!auth?.userId) {
+      return c.json({ error: Messages.ERR_UNAUTHORIZED }, 401);
+    }
+
+    // 講座の存在チェック
+    const { course_id: courseId } = c.req.valid("param");
+    if (!courseId) {
+      return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
+    }
+
+    // データベースから取得
+    const db = getDbConnection(c.env.DATABASE_URL);
+    const [data] = await db
+      .select()
+      .from(course)
+      .where(
+        and(
+          eq(course.id, courseId),
+          eq(course.deleteFlag, false),
+          eq(course.publishFlag, true)
+        )
+      );
+
+    if (!data) {
+      return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
+    }
+
+    return c.json({ data });
   }
+);
 
-  const courseId = c.req.param("course_id");
+/**
+ * 講座登録API
+ */
+Course.post(
+  "/",
+  zValidator(
+    "json",
+    insertCourseSchema.pick({
+      title: true,
+    })
+  ),
+  clerkMiddleware(),
+  async (c) => {
+    // 認証チェック
+    const auth = getAuth(c);
+    if (!auth?.userId) {
+      return c.json({ error: Messages.ERR_UNAUTHORIZED }, 401);
+    }
+    if (auth.userId !== c.env.ADMIN_USER_ID) {
+      return c.json({ error: Messages.MSG_ERR_ADMIN_UNAUTHORIZED }, 401);
+    }
 
-  const db = getDbConnection(c.env.DATABASE_URL);
-  const data = await db
-    .select()
-    .from(course)
-    .where(
-      and(
-        eq(course.id, courseId),
-        eq(course.deleteFlag, false),
-        eq(course.publishFlag, true)
-      )
-    );
+    // バリデーションチェック
+    const values = c.req.valid("json");
+    if (!values.title) {
+      return c.json({ error: Messages.MSG_ERR_TITLE_REQUIRED }, 400);
+    }
+    if (values.title.length >= 100) {
+      return c.json({ error: Messages.MSG_ERR_TITLE_LIMIT }, 400);
+    }
 
-  if (!data) {
-    return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
+    // データベースへの登録
+    const db = getDbConnection(c.env.DATABASE_URL);
+    const [data] = await db
+      .insert(course)
+      .values({
+        id: createId(),
+        title: values.title,
+        userId: auth.userId,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+
+    return c.json({ data });
   }
-
-  return c.json({ data });
-});
+);
 
 export default Course;

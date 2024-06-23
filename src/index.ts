@@ -3,6 +3,7 @@ import Course from "./courses";
 
 export type Env = {
   DATABASE_URL: string;
+  ADMIN_USER_ID: string;
 };
 
 const app = new Hono<{ Bindings: Env }>().basePath("/api");
