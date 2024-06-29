@@ -25,8 +25,8 @@ export const course = pgTable("course", {
   categoryId: text("category_id").references(() => category.id, {
     onDelete: "set null",
   }),
-  createdAt: timestamp("create_date", { mode: "date" }).notNull(),
-  updatedAt: timestamp("update_date", { mode: "date" }).notNull(),
+  createDate: timestamp("create_date", { mode: "date" }).notNull(),
+  updateDate: timestamp("update_date", { mode: "date" }).notNull(),
 });
 
 export const attachment = pgTable("attachment", {
@@ -36,8 +36,8 @@ export const attachment = pgTable("attachment", {
   courseId: text("course_id").references(() => course.id, {
     onDelete: "cascade",
   }),
-  createdAt: timestamp("create_date", { mode: "date" }).notNull(),
-  updatedAt: timestamp("update_date", { mode: "date" }).notNull(),
+  createDate: timestamp("create_date", { mode: "date" }).notNull(),
+  updateDate: timestamp("update_date", { mode: "date" }).notNull(),
 });
 
 export const courseRelations = relations(course, ({ many }) => ({

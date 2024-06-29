@@ -108,17 +108,19 @@ Course.post(
       return c.json({ error: Messages.MSG_ERR_TITLE_LIMIT }, 400);
     }
 
+    // データベース接続
+    const db = getDbConnection(c.env.DATABASE_URL);
+
     // データベースへの登録
     const currentJstDate = getJstDate();
-    const db = getDbConnection(c.env.DATABASE_URL);
     const [data] = await db
       .insert(course)
       .values({
         id: createId(),
         title: values.title,
         userId: auth.userId,
-        createdAt: currentJstDate,
-        updatedAt: currentJstDate,
+        createDate: currentJstDate,
+        updateDate: currentJstDate,
       })
       .returning();
 
@@ -130,7 +132,7 @@ Course.post(
  * 講座タイトル編集API
  */
 Course.put(
-  "/:course_id",
+  "/:course_id/title",
   zValidator(
     "json",
     insertCourseSchema.pick({
@@ -143,7 +145,6 @@ Course.put(
       course_id: z.string().optional(),
     })
   ),
-  clerkMiddleware(),
   async (c) => {
     // 認証チェック
     const auth = getAuth(c);
@@ -152,12 +153,6 @@ Course.put(
     }
     if (auth.userId !== c.env.ADMIN_USER_ID) {
       return c.json({ error: Messages.MSG_ERR_ADMIN_UNAUTHORIZED }, 401);
-    }
-
-    // 講座の存在チェック
-    const { course_id: courseId } = c.req.valid("param");
-    if (!courseId) {
-      return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
     }
 
     // バリデーションチェック
@@ -169,13 +164,29 @@ Course.put(
       return c.json({ error: Messages.MSG_ERR_TITLE_LIMIT }, 400);
     }
 
-    // データベースへの更新
+    // データベース接続
     const db = getDbConnection(c.env.DATABASE_URL);
+
+    // 講座の存在チェック
+    const { course_id: courseId } = c.req.valid("param");
+    if (!courseId) {
+      return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
+    }
+    const [existCourse] = await db
+      .select()
+      .from(course)
+      .where(eq(course.id, courseId));
+    if (!existCourse) {
+      return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
+    }
+
+    // データベースへの更新
+    const currentJstDate = getJstDate();
     const [data] = await db
       .update(course)
       .set({
         title: values.title,
-        updatedAt: new Date(),
+        updateDate: currentJstDate,
       })
       .where(eq(course.id, courseId))
       .returning();
