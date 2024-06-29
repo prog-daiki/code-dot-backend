@@ -8,6 +8,7 @@ import { Messages } from "../sharedInfo/message";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { createId } from "@paralleldrive/cuid2";
+import { getJstDate } from "../sharedInfo/date";
 
 const Course = new Hono<{ Bindings: Env }>();
 
@@ -108,6 +109,7 @@ Course.post(
     }
 
     // データベースへの登録
+    const currentJstDate = getJstDate();
     const db = getDbConnection(c.env.DATABASE_URL);
     const [data] = await db
       .insert(course)
@@ -115,8 +117,8 @@ Course.post(
         id: createId(),
         title: values.title,
         userId: auth.userId,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: currentJstDate,
+        updatedAt: currentJstDate,
       })
       .returning();
 
