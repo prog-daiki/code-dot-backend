@@ -9,6 +9,8 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { createId } from "@paralleldrive/cuid2";
 import { getJstDate } from "../sharedInfo/date";
+import { checkCourseExists, updateCourseDescription } from "./logic";
+import { StatusCode } from "hono/utils/http-status";
 
 const Course = new Hono<{ Bindings: Env }>();
 
@@ -172,11 +174,8 @@ Course.put(
     if (!courseId) {
       return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
     }
-    const [existCourse] = await db
-      .select()
-      .from(course)
-      .where(eq(course.id, courseId));
-    if (!existCourse) {
+    const isCourseExists = await checkCourseExists(db, courseId);
+    if (!isCourseExists) {
       return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
     }
 
@@ -192,6 +191,67 @@ Course.put(
       .returning();
 
     return c.json({ data });
+  }
+);
+
+/**
+ * 講座詳細編集API
+ */
+Course.put(
+  "/:course_id/description",
+  zValidator(
+    "json",
+    insertCourseSchema.pick({
+      description: true,
+    })
+  ),
+  zValidator(
+    "param",
+    z.object({
+      course_id: z.string().optional(),
+    })
+  ),
+  async (c) => {
+    // 認証チェック
+    const auth = getAuth(c);
+    if (!auth?.userId) {
+      return c.json({ error: Messages.ERR_UNAUTHORIZED }, 401);
+    }
+    if (auth.userId !== c.env.ADMIN_USER_ID) {
+      return c.json({ error: Messages.MSG_ERR_ADMIN_UNAUTHORIZED }, 401);
+    }
+
+    // バリデーションチェック
+    const values = c.req.valid("json");
+    if (values.description && values.description.length >= 1000) {
+      return c.json({ error: Messages.MSG_ERR_DESCRIPTION_LIMIT }, 400);
+    }
+
+    // データベース接続
+    const db = getDbConnection(c.env.DATABASE_URL);
+
+    // 講座の存在チェック
+    const { course_id: courseId } = c.req.valid("param");
+    if (!courseId) {
+      return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
+    }
+    const isCourseExists = await checkCourseExists(db, courseId);
+    if (!isCourseExists) {
+      return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
+    }
+
+    // データベースへの更新
+    const result = await updateCourseDescription(
+      db,
+      courseId,
+      values.description
+    );
+
+    if ("error" in result) {
+      return c.json({ error: result.error }, result.status as StatusCode);
+    }
+
+    return c.json(result);
   }
 );
 
