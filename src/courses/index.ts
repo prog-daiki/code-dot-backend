@@ -88,7 +88,6 @@ Course.post(
       title: true,
     })
   ),
-  clerkMiddleware(),
   async (c) => {
     // 認証チェック
     const auth = getAuth(c);
