@@ -180,17 +180,9 @@ Course.put(
     }
 
     // データベースへの更新
-    const currentJstDate = getJstDate();
-    const [data] = await db
-      .update(course)
-      .set({
-        title: values.title,
-        updateDate: currentJstDate,
-      })
-      .where(eq(course.id, courseId))
-      .returning();
+    const result = await updateCourseDescription(db, courseId, values);
 
-    return c.json({ data });
+    return c.json(result);
   }
 );
 
