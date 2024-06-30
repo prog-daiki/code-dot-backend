@@ -9,6 +9,8 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { createId } from "@paralleldrive/cuid2";
 import { getJstDate } from "../sharedInfo/date";
+import { checkCourseExists, updateCourseDescription } from "./logic";
+import { StatusCode } from "hono/utils/http-status";
 
 const Course = new Hono<{ Bindings: Env }>();
 
@@ -108,17 +110,19 @@ Course.post(
       return c.json({ error: Messages.MSG_ERR_TITLE_LIMIT }, 400);
     }
 
+    // データベース接続
+    const db = getDbConnection(c.env.DATABASE_URL);
+
     // データベースへの登録
     const currentJstDate = getJstDate();
-    const db = getDbConnection(c.env.DATABASE_URL);
     const [data] = await db
       .insert(course)
       .values({
         id: createId(),
         title: values.title,
         userId: auth.userId,
-        createdAt: currentJstDate,
-        updatedAt: currentJstDate,
+        createDate: currentJstDate,
+        updateDate: currentJstDate,
       })
       .returning();
 
@@ -130,7 +134,7 @@ Course.post(
  * 講座タイトル編集API
  */
 Course.put(
-  "/:course_id",
+  "/:course_id/title",
   zValidator(
     "json",
     insertCourseSchema.pick({
@@ -143,7 +147,6 @@ Course.put(
       course_id: z.string().optional(),
     })
   ),
-  clerkMiddleware(),
   async (c) => {
     // 認証チェック
     const auth = getAuth(c);
@@ -152,12 +155,6 @@ Course.put(
     }
     if (auth.userId !== c.env.ADMIN_USER_ID) {
       return c.json({ error: Messages.MSG_ERR_ADMIN_UNAUTHORIZED }, 401);
-    }
-
-    // 講座の存在チェック
-    const { course_id: courseId } = c.req.valid("param");
-    if (!courseId) {
-      return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
     }
 
     // バリデーションチェック
@@ -169,18 +166,84 @@ Course.put(
       return c.json({ error: Messages.MSG_ERR_TITLE_LIMIT }, 400);
     }
 
-    // データベースへの更新
+    // データベース接続
     const db = getDbConnection(c.env.DATABASE_URL);
+
+    // 講座の存在チェック
+    const { course_id: courseId } = c.req.valid("param");
+    if (!courseId) {
+      return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
+    }
+    const isCourseExists = await checkCourseExists(db, courseId);
+    if (!isCourseExists) {
+      return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
+    }
+
+    // データベースへの更新
+    const currentJstDate = getJstDate();
     const [data] = await db
       .update(course)
       .set({
         title: values.title,
-        updatedAt: new Date(),
+        updateDate: currentJstDate,
       })
       .where(eq(course.id, courseId))
       .returning();
 
     return c.json({ data });
+  }
+);
+
+/**
+ * 講座詳細編集API
+ */
+Course.put(
+  "/:course_id/description",
+  zValidator(
+    "json",
+    insertCourseSchema.pick({
+      description: true,
+    })
+  ),
+  zValidator(
+    "param",
+    z.object({
+      course_id: z.string().optional(),
+    })
+  ),
+  async (c) => {
+    // 認証チェック
+    const auth = getAuth(c);
+    if (!auth?.userId) {
+      return c.json({ error: Messages.ERR_UNAUTHORIZED }, 401);
+    }
+    if (auth.userId !== c.env.ADMIN_USER_ID) {
+      return c.json({ error: Messages.MSG_ERR_ADMIN_UNAUTHORIZED }, 401);
+    }
+
+    // バリデーションチェック
+    const values = c.req.valid("json");
+    if (values.description && values.description.length >= 1000) {
+      return c.json({ error: Messages.MSG_ERR_DESCRIPTION_LIMIT }, 400);
+    }
+
+    // データベース接続
+    const db = getDbConnection(c.env.DATABASE_URL);
+
+    // 講座の存在チェック
+    const { course_id: courseId } = c.req.valid("param");
+    if (!courseId) {
+      return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
+    }
+    const isCourseExists = await checkCourseExists(db, courseId);
+    if (!isCourseExists) {
+      return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
+    }
+
+    // データベースへの更新
+    const result = await updateCourseDescription(db, courseId, values);
+
+    return c.json(result);
   }
 );
 

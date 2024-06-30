@@ -4,4 +4,5 @@ export const Messages = {
   ERR_COURSE_NOT_FOUND: "存在しない講座です",
   MSG_ERR_TITLE_REQUIRED: "タイトルは必須です",
   MSG_ERR_TITLE_LIMIT: "タイトルは100文字以内です",
+  MSG_ERR_DESCRIPTION_LIMIT: "詳細は1000文字以内です",
 };
