@@ -241,15 +241,7 @@ Course.put(
     }
 
     // データベースへの更新
-    const result = await updateCourseDescription(
-      db,
-      courseId,
-      values.description
-    );
-
-    if ("error" in result) {
-      return c.json({ error: result.error }, result.status as StatusCode);
-    }
+    const result = await updateCourseDescription(db, courseId, values);
 
     return c.json(result);
   }

@@ -2,7 +2,6 @@ import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import * as schema from "../../../db/schema";
 import { course } from "../../../db/schema";
 import { eq } from "drizzle-orm";
-import { Messages } from "../../sharedInfo/message";
 import { getJstDate } from "../../sharedInfo/date";
 
 /**
@@ -23,7 +22,7 @@ export async function checkCourseExists(
 }
 
 /**
- * 講座の詳細を更新する
+ * 講座を更新する
  * @param db
  * @param courseId
  * @param value
@@ -32,17 +31,13 @@ export async function checkCourseExists(
 export async function updateCourseDescription(
   db: PostgresJsDatabase<typeof schema>,
   courseId: string,
-  value?: string | null
+  updateData: Partial<Omit<typeof course.$inferInsert, "id" | "createDate">>
 ) {
-  if (!(await checkCourseExists(db, courseId))) {
-    return { error: Messages.ERR_COURSE_NOT_FOUND, status: 404 };
-  }
-
   const currentJstDate = getJstDate();
   const [data] = await db
     .update(course)
     .set({
-      description: value,
+      ...updateData,
       updateDate: currentJstDate,
     })
     .where(eq(course.id, courseId))
