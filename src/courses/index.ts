@@ -9,8 +9,7 @@ import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { createId } from "@paralleldrive/cuid2";
 import { getJstDate } from "../sharedInfo/date";
-import { checkCourseExists, updateCourseDescription } from "./logic";
-import { StatusCode } from "hono/utils/http-status";
+import { CourseLogic } from "./logic";
 
 const Course = new Hono<{ Bindings: Env }>();
 
@@ -168,19 +167,20 @@ Course.put(
 
     // データベース接続
     const db = getDbConnection(c.env.DATABASE_URL);
+    const courseLogic = new CourseLogic(db);
 
     // 講座の存在チェック
     const { course_id: courseId } = c.req.valid("param");
     if (!courseId) {
       return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
     }
-    const isCourseExists = await checkCourseExists(db, courseId);
+    const isCourseExists = await courseLogic.checkCourseExists(courseId);
     if (!isCourseExists) {
       return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
     }
 
     // データベースへの更新
-    const result = await updateCourseDescription(db, courseId, values);
+    const result = await courseLogic.updateCourse(courseId, values);
 
     return c.json(result);
   }
@@ -221,19 +221,20 @@ Course.put(
 
     // データベース接続
     const db = getDbConnection(c.env.DATABASE_URL);
+    const courseLogic = new CourseLogic(db);
 
     // 講座の存在チェック
     const { course_id: courseId } = c.req.valid("param");
     if (!courseId) {
       return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
     }
-    const isCourseExists = await checkCourseExists(db, courseId);
+    const isCourseExists = await courseLogic.checkCourseExists(courseId);
     if (!isCourseExists) {
       return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
     }
 
     // データベースへの更新
-    const result = await updateCourseDescription(db, courseId, values);
+    const result = await courseLogic.updateCourse(courseId, values);
 
     return c.json(result);
   }
