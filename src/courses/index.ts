@@ -44,7 +44,6 @@ Course.get(
       course_id: z.string().optional(),
     })
   ),
-  clerkMiddleware(),
   async (c) => {
     // 認証チェック
     const auth = getAuth(c);
@@ -52,30 +51,24 @@ Course.get(
       return c.json({ error: Messages.ERR_UNAUTHORIZED }, 401);
     }
 
+    // データベース接続
+    const db = getDbConnection(c.env.DATABASE_URL);
+    const courseLogic = new CourseLogic(db);
+
     // 講座の存在チェック
     const { course_id: courseId } = c.req.valid("param");
     if (!courseId) {
       return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
     }
-
-    // データベースから取得
-    const db = getDbConnection(c.env.DATABASE_URL);
-    const [data] = await db
-      .select()
-      .from(course)
-      .where(
-        and(
-          eq(course.id, courseId),
-          eq(course.deleteFlag, false),
-          eq(course.publishFlag, true)
-        )
-      );
-
-    if (!data) {
+    const isCourseExists = await courseLogic.checkCourseExists(courseId);
+    if (!isCourseExists) {
       return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
     }
 
-    return c.json({ data });
+    // データベースから取得
+    const result = await courseLogic.getCourse(courseId);
+
+    return c.json(result);
   }
 );
 
@@ -217,6 +210,60 @@ Course.put(
     const values = c.req.valid("json");
     if (values.description && values.description.length >= 1000) {
       return c.json({ error: Messages.MSG_ERR_DESCRIPTION_LIMIT }, 400);
+    }
+
+    // データベース接続
+    const db = getDbConnection(c.env.DATABASE_URL);
+    const courseLogic = new CourseLogic(db);
+
+    // 講座の存在チェック
+    const { course_id: courseId } = c.req.valid("param");
+    if (!courseId) {
+      return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
+    }
+    const isCourseExists = await courseLogic.checkCourseExists(courseId);
+    if (!isCourseExists) {
+      return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
+    }
+
+    // データベースへの更新
+    const result = await courseLogic.updateCourse(courseId, values);
+
+    return c.json(result);
+  }
+);
+
+/**
+ * 講座サムネイル編集API
+ */
+Course.put(
+  "/:course_id/thumbnail",
+  zValidator(
+    "json",
+    insertCourseSchema.pick({
+      imageUrl: true,
+    })
+  ),
+  zValidator(
+    "param",
+    z.object({
+      course_id: z.string().optional(),
+    })
+  ),
+  async (c) => {
+    // 認証チェック
+    const auth = getAuth(c);
+    if (!auth?.userId) {
+      return c.json({ error: Messages.ERR_UNAUTHORIZED }, 401);
+    }
+    if (auth.userId !== c.env.ADMIN_USER_ID) {
+      return c.json({ error: Messages.MSG_ERR_ADMIN_UNAUTHORIZED }, 401);
+    }
+
+    // バリデーションチェック
+    const values = c.req.valid("json");
+    if (!values.imageUrl) {
+      return c.json({ error: Messages.MSG_ERR_IMAGE_URL_REQUIRED }, 400);
     }
 
     // データベース接続

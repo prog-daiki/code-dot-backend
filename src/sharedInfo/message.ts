@@ -5,4 +5,7 @@ export const Messages = {
   MSG_ERR_TITLE_REQUIRED: "タイトルは必須です",
   MSG_ERR_TITLE_LIMIT: "タイトルは100文字以内です",
   MSG_ERR_DESCRIPTION_LIMIT: "詳細は1000文字以内です",
+  MSG_ERR_IMAGE_URL_REQUIRED: "サムネイルは必須です",
+  MSG_ERR_CATEGORY_REQUIRED: "カテゴリーは必須です",
+  MSG_ERR_CATEGORY_LIMIT: "カテゴリーは100文字以内です",
 };

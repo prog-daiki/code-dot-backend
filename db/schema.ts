@@ -57,3 +57,4 @@ export const attachmentsRelations = relations(attachment, ({ one }) => ({
 }));
 
 export const insertCourseSchema = createInsertSchema(course);
+export const insertCategorySchema = createInsertSchema(category);

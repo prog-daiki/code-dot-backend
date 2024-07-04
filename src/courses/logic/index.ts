@@ -25,6 +25,19 @@ export class CourseLogic {
   }
 
   /**
+   * 講座を取得する
+   * @param courseId
+   * @returns
+   */
+  async getCourse(courseId: string) {
+    const [data] = await this.db
+      .select()
+      .from(course)
+      .where(eq(course.id, courseId));
+    return data;
+  }
+
+  /**
    * 講座を更新する
    * @param db
    * @param courseId
