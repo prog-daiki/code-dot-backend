@@ -4,7 +4,7 @@ import { getDbConnection } from "../../db/drizzle";
 import { course, insertCourseSchema } from "../../db/schema";
 import { Env } from "..";
 import { and, eq } from "drizzle-orm";
-import { Messages } from "../sharedInfo/message";
+import { Entity, Messages } from "../sharedInfo/message";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { createId } from "@paralleldrive/cuid2";
@@ -48,7 +48,7 @@ Course.get(
     // 認証チェック
     const auth = getAuth(c);
     if (!auth?.userId) {
-      return c.json({ error: Messages.ERR_UNAUTHORIZED }, 401);
+      return c.json({ error: Messages.MSG_ERR_001 }, 401);
     }
 
     // データベース接続
@@ -57,12 +57,8 @@ Course.get(
 
     // 講座の存在チェック
     const { course_id: courseId } = c.req.valid("param");
-    if (!courseId) {
-      return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
-    }
-    const isCourseExists = await courseLogic.checkCourseExists(courseId);
-    if (!isCourseExists) {
-      return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
+    if (!courseId || !(await courseLogic.checkCourseExists(courseId))) {
+      return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
     }
 
     // データベースから取得
