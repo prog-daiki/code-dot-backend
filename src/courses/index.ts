@@ -62,9 +62,17 @@ Course.get(
     }
 
     // データベースから取得
-    const result = await courseLogic.getCourse(courseId);
+    const course = await courseLogic.getCourse(courseId);
 
-    return c.json(result);
+    // 講座の削除・公開チェック
+    if (
+      (course.deleteFlag || !course.publishFlag) &&
+      auth.userId !== c.env.ADMIN_USER_ID
+    ) {
+      return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
+    }
+
+    return c.json(course);
   }
 );
 
