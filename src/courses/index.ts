@@ -4,7 +4,7 @@ import { getDbConnection } from "../../db/drizzle";
 import { course, insertCourseSchema } from "../../db/schema";
 import { Env } from "..";
 import { and, eq } from "drizzle-orm";
-import { Entity, Messages } from "../sharedInfo/message";
+import { Entity, Length, Messages } from "../sharedInfo/message";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { createId } from "@paralleldrive/cuid2";
@@ -20,17 +20,24 @@ Course.get("/", clerkMiddleware(), async (c) => {
   // 認証チェック
   const auth = getAuth(c);
   if (!auth?.userId) {
-    return c.json({ error: Messages.ERR_UNAUTHORIZED }, 401);
+    return c.json({ error: Messages.MSG_ERR_001 }, 401);
   }
 
-  // データベースから取得
+  // データベース接続
   const db = getDbConnection(c.env.DATABASE_URL);
-  const data = await db
-    .select()
-    .from(course)
-    .where(and(eq(course.deleteFlag, false), eq(course.publishFlag, true)));
+  const courseLogic = new CourseLogic(db);
 
-  return c.json({ data });
+  // データベースから取得
+  const courses = await courseLogic.getCourses();
+
+  if (auth.userId !== c.env.ADMIN_USER_ID) {
+    const filteredCourses = courses.filter(
+      (course) => course.deleteFlag === false && course.publishFlag === true
+    );
+    return c.json(filteredCourses);
+  }
+
+  return c.json(courses);
 });
 
 /**
@@ -91,38 +98,32 @@ Course.post(
     // 認証チェック
     const auth = getAuth(c);
     if (!auth?.userId) {
-      return c.json({ error: Messages.ERR_UNAUTHORIZED }, 401);
+      return c.json({ error: Messages.MSG_ERR_001 }, 401);
     }
     if (auth.userId !== c.env.ADMIN_USER_ID) {
-      return c.json({ error: Messages.MSG_ERR_ADMIN_UNAUTHORIZED }, 401);
+      return c.json({ error: Messages.MSG_ERR_002 }, 401);
     }
 
     // バリデーションチェック
     const values = c.req.valid("json");
     if (!values.title) {
-      return c.json({ error: Messages.MSG_ERR_TITLE_REQUIRED }, 400);
+      return c.json({ error: Messages.MSG_ERR_004(Entity.COURSE) }, 400);
     }
     if (values.title.length >= 100) {
-      return c.json({ error: Messages.MSG_ERR_TITLE_LIMIT }, 400);
+      return c.json(
+        { error: Messages.MSG_ERR_005(Entity.COURSE, Length.TITLE) },
+        400
+      );
     }
 
     // データベース接続
     const db = getDbConnection(c.env.DATABASE_URL);
+    const courseLogic = new CourseLogic(db);
 
     // データベースへの登録
-    const currentJstDate = getJstDate();
-    const [data] = await db
-      .insert(course)
-      .values({
-        id: createId(),
-        title: values.title,
-        userId: auth.userId,
-        createDate: currentJstDate,
-        updateDate: currentJstDate,
-      })
-      .returning();
+    const course = await courseLogic.registerCourse(values, auth.userId);
 
-    return c.json({ data });
+    return c.json(course);
   }
 );
 
