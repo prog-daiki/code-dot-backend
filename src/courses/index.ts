@@ -1,14 +1,11 @@
 import { clerkMiddleware, getAuth } from "@hono/clerk-auth";
 import { Hono } from "hono";
 import { getDbConnection } from "../../db/drizzle";
-import { course, insertCourseSchema } from "../../db/schema";
+import { insertCourseSchema } from "../../db/schema";
 import { Env } from "..";
-import { and, eq } from "drizzle-orm";
 import { Entity, Length, Messages } from "../sharedInfo/message";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { createId } from "@paralleldrive/cuid2";
-import { getJstDate } from "../sharedInfo/date";
 import { CourseLogic } from "./logic";
 
 const Course = new Hono<{ Bindings: Env }>();
