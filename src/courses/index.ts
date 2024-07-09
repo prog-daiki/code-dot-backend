@@ -145,19 +145,22 @@ Course.put(
     // 認証チェック
     const auth = getAuth(c);
     if (!auth?.userId) {
-      return c.json({ error: Messages.ERR_UNAUTHORIZED }, 401);
+      return c.json({ error: Messages.MSG_ERR_001 }, 401);
     }
     if (auth.userId !== c.env.ADMIN_USER_ID) {
-      return c.json({ error: Messages.MSG_ERR_ADMIN_UNAUTHORIZED }, 401);
+      return c.json({ error: Messages.MSG_ERR_002 }, 401);
     }
 
     // バリデーションチェック
     const values = c.req.valid("json");
     if (!values.title) {
-      return c.json({ error: Messages.MSG_ERR_TITLE_REQUIRED }, 400);
+      return c.json({ error: Messages.MSG_ERR_004(Entity.COURSE) }, 400);
     }
     if (values.title.length >= 100) {
-      return c.json({ error: Messages.MSG_ERR_TITLE_LIMIT }, 400);
+      return c.json(
+        { error: Messages.MSG_ERR_005(Entity.COURSE, Length.TITLE) },
+        400
+      );
     }
 
     // データベース接続
@@ -166,18 +169,14 @@ Course.put(
 
     // 講座の存在チェック
     const { course_id: courseId } = c.req.valid("param");
-    if (!courseId) {
-      return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
-    }
-    const isCourseExists = await courseLogic.checkCourseExists(courseId);
-    if (!isCourseExists) {
-      return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
+    if (!courseId || !(await courseLogic.checkCourseExists(courseId))) {
+      return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
     }
 
     // データベースへの更新
-    const result = await courseLogic.updateCourse(courseId, values);
+    const course = await courseLogic.updateCourse(courseId, values);
 
-    return c.json(result);
+    return c.json(course);
   }
 );
 
