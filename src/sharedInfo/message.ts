@@ -14,6 +14,7 @@ export enum Entity {
 export enum Property {
   TITLE = "タイトル",
   DESCRIPTION = "説明",
+  IMAGE_URL = "サムネイル",
 }
 
 export enum Length {
