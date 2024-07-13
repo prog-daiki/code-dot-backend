@@ -339,4 +339,57 @@ Course.put(
   }
 );
 
+/**
+ * 講座価格編集API
+ */
+Course.put(
+  "/:course_id/price",
+  zValidator(
+    "json",
+    insertCourseSchema.pick({
+      price: true,
+    })
+  ),
+  zValidator(
+    "param",
+    z.object({
+      course_id: z.string().optional(),
+    })
+  ),
+  async (c) => {
+    // 認証チェック
+    const auth = getAuth(c);
+    if (!auth?.userId) {
+      return c.json({ error: Messages.MSG_ERR_001 }, 401);
+    }
+    if (auth.userId !== c.env.ADMIN_USER_ID) {
+      return c.json({ error: Messages.MSG_ERR_002 }, 401);
+    }
+
+    // バリデーションチェック
+    const values = c.req.valid("json");
+    if (!values.price) {
+      return c.json({ error: Messages.MSG_ERR_004(Property.PRICE) }, 400);
+    }
+    if (values.price < 0 || values.price > 1000000) {
+      return c.json({ error: Messages.MSG_ERR_006(Property.PRICE) }, 400);
+    }
+
+    // データベース接続
+    const db = getDbConnection(c.env.DATABASE_URL);
+    const courseLogic = new CourseLogic(db);
+
+    // 講座の存在チェック
+    const { course_id: courseId } = c.req.valid("param");
+    if (!courseId || !(await courseLogic.checkCourseExists(courseId))) {
+      return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
+    }
+
+    // データベースへの更新
+    const course = await courseLogic.updateCourse(courseId, values);
+
+    return c.json(course);
+  }
+);
+
 export default Course;
