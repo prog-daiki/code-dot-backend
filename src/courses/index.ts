@@ -1,14 +1,11 @@
 import { clerkMiddleware, getAuth } from "@hono/clerk-auth";
 import { Hono } from "hono";
 import { getDbConnection } from "../../db/drizzle";
-import { course, insertCourseSchema } from "../../db/schema";
+import { insertCourseSchema } from "../../db/schema";
 import { Env } from "..";
-import { and, eq } from "drizzle-orm";
-import { Entity, Length, Messages } from "../sharedInfo/message";
+import { Entity, Length, Messages, Property } from "../sharedInfo/message";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { createId } from "@paralleldrive/cuid2";
-import { getJstDate } from "../sharedInfo/date";
 import { CourseLogic } from "./logic";
 
 const Course = new Hono<{ Bindings: Env }>();
@@ -107,11 +104,11 @@ Course.post(
     // バリデーションチェック
     const values = c.req.valid("json");
     if (!values.title) {
-      return c.json({ error: Messages.MSG_ERR_004(Entity.COURSE) }, 400);
+      return c.json({ error: Messages.MSG_ERR_004(Property.TITLE) }, 400);
     }
     if (values.title.length >= 100) {
       return c.json(
-        { error: Messages.MSG_ERR_005(Entity.COURSE, Length.TITLE) },
+        { error: Messages.MSG_ERR_005(Property.TITLE, Length.TITLE) },
         400
       );
     }
@@ -148,19 +145,22 @@ Course.put(
     // 認証チェック
     const auth = getAuth(c);
     if (!auth?.userId) {
-      return c.json({ error: Messages.ERR_UNAUTHORIZED }, 401);
+      return c.json({ error: Messages.MSG_ERR_001 }, 401);
     }
     if (auth.userId !== c.env.ADMIN_USER_ID) {
-      return c.json({ error: Messages.MSG_ERR_ADMIN_UNAUTHORIZED }, 401);
+      return c.json({ error: Messages.MSG_ERR_002 }, 401);
     }
 
     // バリデーションチェック
     const values = c.req.valid("json");
     if (!values.title) {
-      return c.json({ error: Messages.MSG_ERR_TITLE_REQUIRED }, 400);
+      return c.json({ error: Messages.MSG_ERR_004(Property.TITLE) }, 400);
     }
     if (values.title.length >= 100) {
-      return c.json({ error: Messages.MSG_ERR_TITLE_LIMIT }, 400);
+      return c.json(
+        { error: Messages.MSG_ERR_005(Property.TITLE, Length.TITLE) },
+        400
+      );
     }
 
     // データベース接続
@@ -169,18 +169,14 @@ Course.put(
 
     // 講座の存在チェック
     const { course_id: courseId } = c.req.valid("param");
-    if (!courseId) {
-      return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
-    }
-    const isCourseExists = await courseLogic.checkCourseExists(courseId);
-    if (!isCourseExists) {
-      return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
+    if (!courseId || !(await courseLogic.checkCourseExists(courseId))) {
+      return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
     }
 
     // データベースへの更新
-    const result = await courseLogic.updateCourse(courseId, values);
+    const course = await courseLogic.updateCourse(courseId, values);
 
-    return c.json(result);
+    return c.json(course);
   }
 );
 
@@ -205,16 +201,21 @@ Course.put(
     // 認証チェック
     const auth = getAuth(c);
     if (!auth?.userId) {
-      return c.json({ error: Messages.ERR_UNAUTHORIZED }, 401);
+      return c.json({ error: Messages.MSG_ERR_001 }, 401);
     }
     if (auth.userId !== c.env.ADMIN_USER_ID) {
-      return c.json({ error: Messages.MSG_ERR_ADMIN_UNAUTHORIZED }, 401);
+      return c.json({ error: Messages.MSG_ERR_002 }, 401);
     }
 
     // バリデーションチェック
     const values = c.req.valid("json");
     if (values.description && values.description.length >= 1000) {
-      return c.json({ error: Messages.MSG_ERR_DESCRIPTION_LIMIT }, 400);
+      return c.json(
+        {
+          error: Messages.MSG_ERR_005(Property.DESCRIPTION, Length.DESCRIPTION),
+        },
+        400
+      );
     }
 
     // データベース接続
@@ -223,18 +224,14 @@ Course.put(
 
     // 講座の存在チェック
     const { course_id: courseId } = c.req.valid("param");
-    if (!courseId) {
-      return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
-    }
-    const isCourseExists = await courseLogic.checkCourseExists(courseId);
-    if (!isCourseExists) {
-      return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
+    if (!courseId || !(await courseLogic.checkCourseExists(courseId))) {
+      return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
     }
 
     // データベースへの更新
-    const result = await courseLogic.updateCourse(courseId, values);
+    const course = await courseLogic.updateCourse(courseId, values);
 
-    return c.json(result);
+    return c.json(course);
   }
 );
 
@@ -259,16 +256,16 @@ Course.put(
     // 認証チェック
     const auth = getAuth(c);
     if (!auth?.userId) {
-      return c.json({ error: Messages.ERR_UNAUTHORIZED }, 401);
+      return c.json({ error: Messages.MSG_ERR_001 }, 401);
     }
     if (auth.userId !== c.env.ADMIN_USER_ID) {
-      return c.json({ error: Messages.MSG_ERR_ADMIN_UNAUTHORIZED }, 401);
+      return c.json({ error: Messages.MSG_ERR_002 }, 401);
     }
 
     // バリデーションチェック
     const values = c.req.valid("json");
     if (!values.imageUrl) {
-      return c.json({ error: Messages.MSG_ERR_IMAGE_URL_REQUIRED }, 400);
+      return c.json({ error: Messages.MSG_ERR_004(Property.IMAGE_URL) }, 400);
     }
 
     // データベース接続
@@ -277,18 +274,14 @@ Course.put(
 
     // 講座の存在チェック
     const { course_id: courseId } = c.req.valid("param");
-    if (!courseId) {
-      return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
-    }
-    const isCourseExists = await courseLogic.checkCourseExists(courseId);
-    if (!isCourseExists) {
-      return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
+    if (!courseId || !(await courseLogic.checkCourseExists(courseId))) {
+      return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
     }
 
     // データベースへの更新
-    const result = await courseLogic.updateCourse(courseId, values);
+    const course = await courseLogic.updateCourse(courseId, values);
 
-    return c.json(result);
+    return c.json(course);
   }
 );
 
