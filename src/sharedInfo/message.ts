@@ -10,6 +10,7 @@ export const Messages = {
 
 export enum Entity {
   COURSE = "講座",
+  CATEGORY = "カテゴリー",
 }
 
 export enum Property {
@@ -17,6 +18,7 @@ export enum Property {
   DESCRIPTION = "説明",
   IMAGE_URL = "サムネイル",
   PRICE = "価格",
+  CATEGORY_ID = "カテゴリーID",
 }
 
 export enum Length {

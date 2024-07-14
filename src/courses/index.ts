@@ -7,6 +7,7 @@ import { Entity, Length, Messages, Property } from "../sharedInfo/message";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { CourseLogic } from "./logic";
+import { CategoryLogic } from "../categories/logic";
 
 const Course = new Hono<{ Bindings: Env }>();
 
@@ -306,30 +307,32 @@ Course.put(
     // 認証チェック
     const auth = getAuth(c);
     if (!auth?.userId) {
-      return c.json({ error: Messages.ERR_UNAUTHORIZED }, 401);
+      return c.json({ error: Messages.MSG_ERR_001 }, 401);
     }
     if (auth.userId !== c.env.ADMIN_USER_ID) {
-      return c.json({ error: Messages.MSG_ERR_ADMIN_UNAUTHORIZED }, 401);
+      return c.json({ error: Messages.MSG_ERR_002 }, 401);
     }
 
     // バリデーションチェック
     const values = c.req.valid("json");
     if (!values.categoryId) {
-      return c.json({ error: Messages.MSG_ERR_CATEGORY_REQUIRED }, 400);
+      return c.json({ error: Messages.MSG_ERR_004(Property.CATEGORY_ID) }, 400);
     }
 
     // データベース接続
     const db = getDbConnection(c.env.DATABASE_URL);
     const courseLogic = new CourseLogic(db);
+    const categoryLogic = new CategoryLogic(db);
+
+    // カテゴリーの存在チェック
+    if (!(await categoryLogic.checkCategoryExists(values.categoryId))) {
+      return c.json({ error: Messages.MSG_ERR_003(Entity.CATEGORY) }, 404);
+    }
 
     // 講座の存在チェック
     const { course_id: courseId } = c.req.valid("param");
-    if (!courseId) {
-      return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
-    }
-    const isCourseExists = await courseLogic.checkCourseExists(courseId);
-    if (!isCourseExists) {
-      return c.json({ error: Messages.ERR_COURSE_NOT_FOUND }, 404);
+    if (!courseId || !(await courseLogic.checkCourseExists(courseId))) {
+      return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
     }
 
     // データベースへの更新
