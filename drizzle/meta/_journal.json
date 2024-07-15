@@ -29,6 +29,20 @@
       "when": 1719659417057,
       "tag": "0003_brave_moonstone",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1720928148674,
+      "tag": "0004_outstanding_charles_xavier",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1720928286915,
+      "tag": "0005_abandoned_chamber",
+      "breakpoints": true
     }
   ]
 }

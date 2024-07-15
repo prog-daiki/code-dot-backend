@@ -3,6 +3,7 @@ import Course from "./courses";
 import { cors } from "hono/cors";
 import { clerkMiddleware } from "@hono/clerk-auth";
 import Category from "./categories";
+import Chapter from "./chapters";
 
 export type Env = {
   DATABASE_URL: string;
@@ -23,6 +24,9 @@ app.use(
 
 app.use("*", clerkMiddleware());
 
-const routes = app.route("/courses", Course).route("/categories", Category);
+const routes = app
+  .route("/courses", Course)
+  .route("/categories", Category)
+  .route("/courses/:course_id/chapters", Chapter);
 
 export default app;

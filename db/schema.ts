@@ -40,9 +40,25 @@ export const attachment = pgTable("attachment", {
   updateDate: timestamp("update_date", { mode: "date" }).notNull(),
 });
 
+export const chapter = pgTable("chapter", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  description: text("description"),
+  videoUrl: text("video_url"),
+  position: integer("position").notNull(),
+  publishFlag: boolean("publish_flag").default(false),
+  freeFlag: boolean("free_flag").default(false),
+  courseId: text("course_id").references(() => course.id, {
+    onDelete: "cascade",
+  }),
+  createDate: timestamp("create_date", { mode: "date" }).notNull(),
+  updateDate: timestamp("update_date", { mode: "date" }).notNull(),
+});
+
 export const courseRelations = relations(course, ({ many }) => ({
   categories: many(category),
   attachments: many(attachment),
+  chapters: many(chapter),
 }));
 
 export const categoriesRelations = relations(category, ({ many }) => ({
@@ -56,5 +72,13 @@ export const attachmentsRelations = relations(attachment, ({ one }) => ({
   }),
 }));
 
+export const chaptersRelations = relations(chapter, ({ one }) => ({
+  course: one(course, {
+    fields: [chapter.courseId],
+    references: [course.id],
+  }),
+}));
+
 export const insertCourseSchema = createInsertSchema(course);
 export const insertCategorySchema = createInsertSchema(category);
+export const insertChapterSchema = createInsertSchema(chapter);
