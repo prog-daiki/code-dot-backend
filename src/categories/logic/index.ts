@@ -1,6 +1,7 @@
 import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import * as schema from "../../../db/schema";
-import { asc } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
+import { category } from "../../../db/schema";
 /**
  * カテゴリーのロジックを管理するクラス
  */
@@ -14,8 +15,21 @@ export class CategoryLogic {
   async getCategories() {
     const data = await this.db
       .select()
-      .from(schema.category)
-      .orderBy(asc(schema.category.name));
+      .from(category)
+      .orderBy(asc(category.name));
     return data;
+  }
+
+  /**
+   * カテゴリーが存在するかをチェックする
+   * @param categoryId
+   * @returns
+   */
+  async checkCategoryExists(categoryId: string) {
+    const [existCategory] = await this.db
+      .select()
+      .from(category)
+      .where(eq(category.id, categoryId));
+    return !!existCategory;
   }
 }
