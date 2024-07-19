@@ -19,9 +19,11 @@ export enum Property {
   IMAGE_URL = "サムネイル",
   PRICE = "価格",
   CATEGORY_ID = "カテゴリーID",
+  CATEGORY_NAME = "カテゴリー名",
 }
 
 export enum Length {
   TITLE = "100文字",
   DESCRIPTION = "1000文字",
+  CATEGORY_NAME = "100文字",
 }
