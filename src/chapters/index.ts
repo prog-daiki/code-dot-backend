@@ -98,4 +98,60 @@ Chapter.post(
   }
 );
 
+/**
+ * チャプター並び替えAPI
+ */
+Chapter.put(
+  "/reorder",
+  zValidator(
+    "param",
+    z.object({
+      course_id: z.string().optional(),
+    })
+  ),
+  zValidator(
+    "json",
+    z.object({
+      list: z.array(
+        z.object({
+          id: z.string(),
+          position: z.number(),
+        })
+      ),
+    })
+  ),
+  async (c) => {
+    // 認証チェック
+    const auth = getAuth(c);
+    if (!auth?.userId) {
+      return c.json({ error: Messages.MSG_ERR_001 }, 401);
+    }
+    if (auth.userId !== c.env.ADMIN_USER_ID) {
+      return c.json({ error: Messages.MSG_ERR_002 }, 401);
+    }
+
+    const { list } = c.req.valid("json");
+    const { course_id: courseId } = c.req.valid("param");
+
+    // データベース接続
+    const db = getDbConnection(c.env.DATABASE_URL);
+    const chapterLogic = new ChapterLogic(db);
+    const courseLogic = new CourseLogic(db);
+
+    // 講座の存在チェック
+    if (!courseId || !(await courseLogic.checkCourseExists(courseId))) {
+      return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
+    }
+
+    // データベースへの更新
+    await Promise.all(
+      list.map(({ id, position }) =>
+        chapterLogic.updateChapter(id, { position })
+      )
+    );
+
+    return c.json({ status: 200 });
+  }
+);
+
 export default Chapter;

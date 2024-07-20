@@ -46,4 +46,23 @@ export class ChapterLogic {
       .orderBy(asc(chapter.position));
     return chapters;
   }
+
+  /**
+   * チャプターを更新する
+   * @param id
+   * @param updateData
+   * @returns
+   */
+  async updateChapter(
+    id: string,
+    updateData: Partial<Omit<typeof chapter.$inferInsert, "id" | "createDate">>
+  ) {
+    const currentJsDate = getJstDate();
+    const [data] = await this.db
+      .update(chapter)
+      .set({ ...updateData, updateDate: currentJsDate })
+      .where(eq(chapter.id, id))
+      .returning();
+    return data;
+  }
 }
