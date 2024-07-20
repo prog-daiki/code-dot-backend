@@ -1,4 +1,4 @@
-import { clerkMiddleware, getAuth } from "@hono/clerk-auth";
+import { getAuth } from "@hono/clerk-auth";
 import { Hono } from "hono";
 import { getDbConnection } from "../../db/drizzle";
 import { insertCourseSchema } from "../../db/schema";
@@ -110,7 +110,7 @@ Course.post(
     if (!values.title) {
       return c.json({ error: Messages.MSG_ERR_004(Property.TITLE) }, 400);
     }
-    if (values.title.length >= 100) {
+    if (values.title.length > 100) {
       return c.json(
         { error: Messages.MSG_ERR_005(Property.TITLE, Length.TITLE) },
         400
@@ -151,7 +151,8 @@ Course.put(
     if (!auth?.userId) {
       return c.json({ error: Messages.MSG_ERR_001 }, 401);
     }
-    if (auth.userId !== c.env.ADMIN_USER_ID) {
+    const isAdmin = auth.userId === c.env.ADMIN_USER_ID;
+    if (!isAdmin) {
       return c.json({ error: Messages.MSG_ERR_002 }, 401);
     }
 
@@ -160,7 +161,7 @@ Course.put(
     if (!values.title) {
       return c.json({ error: Messages.MSG_ERR_004(Property.TITLE) }, 400);
     }
-    if (values.title.length >= 100) {
+    if (values.title.length > 100) {
       return c.json(
         { error: Messages.MSG_ERR_005(Property.TITLE, Length.TITLE) },
         400
@@ -207,13 +208,14 @@ Course.put(
     if (!auth?.userId) {
       return c.json({ error: Messages.MSG_ERR_001 }, 401);
     }
-    if (auth.userId !== c.env.ADMIN_USER_ID) {
+    const isAdmin = auth.userId === c.env.ADMIN_USER_ID;
+    if (!isAdmin) {
       return c.json({ error: Messages.MSG_ERR_002 }, 401);
     }
 
     // バリデーションチェック
     const values = c.req.valid("json");
-    if (values.description && values.description.length >= 1000) {
+    if (values.description && values.description.length > 1000) {
       return c.json(
         {
           error: Messages.MSG_ERR_005(Property.DESCRIPTION, Length.DESCRIPTION),
@@ -262,7 +264,8 @@ Course.put(
     if (!auth?.userId) {
       return c.json({ error: Messages.MSG_ERR_001 }, 401);
     }
-    if (auth.userId !== c.env.ADMIN_USER_ID) {
+    const isAdmin = auth.userId === c.env.ADMIN_USER_ID;
+    if (!isAdmin) {
       return c.json({ error: Messages.MSG_ERR_002 }, 401);
     }
 
@@ -312,7 +315,8 @@ Course.put(
     if (!auth?.userId) {
       return c.json({ error: Messages.MSG_ERR_001 }, 401);
     }
-    if (auth.userId !== c.env.ADMIN_USER_ID) {
+    const isAdmin = auth.userId === c.env.ADMIN_USER_ID;
+    if (!isAdmin) {
       return c.json({ error: Messages.MSG_ERR_002 }, 401);
     }
 
@@ -327,15 +331,15 @@ Course.put(
     const courseLogic = new CourseLogic(db);
     const categoryLogic = new CategoryLogic(db);
 
-    // カテゴリーの存在チェック
-    if (!(await categoryLogic.checkCategoryExists(values.categoryId))) {
-      return c.json({ error: Messages.MSG_ERR_003(Entity.CATEGORY) }, 404);
-    }
-
     // 講座の存在チェック
     const { course_id: courseId } = c.req.valid("param");
     if (!courseId || !(await courseLogic.checkCourseExists(courseId))) {
       return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
+    }
+
+    // カテゴリーの存在チェック
+    if (!(await categoryLogic.checkCategoryExists(values.categoryId))) {
+      return c.json({ error: Messages.MSG_ERR_003(Entity.CATEGORY) }, 404);
     }
 
     // データベースへの更新
@@ -368,7 +372,8 @@ Course.put(
     if (!auth?.userId) {
       return c.json({ error: Messages.MSG_ERR_001 }, 401);
     }
-    if (auth.userId !== c.env.ADMIN_USER_ID) {
+    const isAdmin = auth.userId === c.env.ADMIN_USER_ID;
+    if (!isAdmin) {
       return c.json({ error: Messages.MSG_ERR_002 }, 401);
     }
 
