@@ -14,7 +14,7 @@ const Course = new Hono<{ Bindings: Env }>();
 /**
  * 講座一覧取得API
  */
-Course.get("/", clerkMiddleware(), async (c) => {
+Course.get("/", async (c) => {
   // 認証チェック
   const auth = getAuth(c);
   if (!auth?.userId) {
@@ -28,7 +28,9 @@ Course.get("/", clerkMiddleware(), async (c) => {
   // データベースから取得
   const courses = await courseLogic.getCourses();
 
-  if (auth.userId !== c.env.ADMIN_USER_ID) {
+  // 講座の削除・公開チェック
+  const isAdmin = auth.userId === c.env.ADMIN_USER_ID;
+  if (!isAdmin) {
     const filteredCourses = courses.filter(
       (course) => course.deleteFlag === false && course.publishFlag === true
     );
