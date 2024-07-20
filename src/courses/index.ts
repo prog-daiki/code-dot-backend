@@ -56,12 +56,14 @@ Course.get(
       return c.json({ error: Messages.MSG_ERR_001 }, 401);
     }
 
+    // パスパラメータの取得
+    const { course_id: courseId } = c.req.valid("param");
+
     // データベース接続
     const db = getDbConnection(c.env.DATABASE_URL);
     const courseLogic = new CourseLogic(db);
 
     // 講座の存在チェック
-    const { course_id: courseId } = c.req.valid("param");
     if (!courseId || !(await courseLogic.checkCourseExists(courseId))) {
       return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
     }
@@ -70,10 +72,8 @@ Course.get(
     const course = await courseLogic.getCourse(courseId);
 
     // 講座の削除・公開チェック
-    if (
-      (course.deleteFlag || !course.publishFlag) &&
-      auth.userId !== c.env.ADMIN_USER_ID
-    ) {
+    const isAdmin = auth.userId === c.env.ADMIN_USER_ID;
+    if ((course.deleteFlag || !course.publishFlag) && !isAdmin) {
       return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
     }
 
