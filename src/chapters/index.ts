@@ -211,4 +211,69 @@ Chapter.put(
   }
 );
 
+/**
+ * チャプタータイトル編集API
+ */
+Chapter.put(
+  "/:chapter_id/title",
+  zValidator(
+    "param",
+    z.object({
+      chapter_id: z.string().optional(),
+      course_id: z.string().optional(),
+    })
+  ),
+  zValidator(
+    "json",
+    insertChapterSchema.pick({
+      title: true,
+    })
+  ),
+  async (c) => {
+    // 認証チェック
+    const auth = getAuth(c);
+    if (!auth?.userId) {
+      return c.json({ error: Messages.MSG_ERR_001 }, 401);
+    }
+    const isAdmin = auth.userId === c.env.ADMIN_USER_ID;
+    if (!isAdmin) {
+      return c.json({ error: Messages.MSG_ERR_002 }, 401);
+    }
+
+    // パスパラメータを取得
+    const { course_id: courseId, chapter_id: chapterId } = c.req.valid("param");
+
+    // バリデーションチェック
+    const values = c.req.valid("json");
+    if (!values.title) {
+      return c.json({ error: Messages.MSG_ERR_004(Property.TITLE) }, 400);
+    }
+    if (values.title.length > 100) {
+      return c.json(
+        { error: Messages.MSG_ERR_005(Property.TITLE, Length.TITLE) },
+        400
+      );
+    }
+
+    // データベース接続
+    const db = getDbConnection(c.env.DATABASE_URL);
+    const courseLogic = new CourseLogic(db);
+    const chapterLogic = new ChapterLogic(db);
+
+    // 講座の存在チェック
+    if (!courseId || !(await courseLogic.checkCourseExists(courseId))) {
+      return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
+    }
+
+    // チャプターの存在チェック
+    if (!chapterId || !(await chapterLogic.checkChapterExists(chapterId))) {
+      return c.json({ error: Messages.MSG_ERR_003(Entity.CHAPTER) }, 404);
+    }
+
+    const chapter = await chapterLogic.updateChapter(chapterId, values);
+
+    return c.json(chapter);
+  }
+);
+
 export default Chapter;
