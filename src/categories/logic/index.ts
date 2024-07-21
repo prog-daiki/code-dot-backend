@@ -49,4 +49,35 @@ export class CategoryLogic {
       .returning();
     return data;
   }
+
+  /**
+   * カテゴリーを更新する
+   * @param categoryId
+   * @param values
+   * @returns
+   */
+  async updateCategory(
+    categoryId: string,
+    values: Pick<typeof category.$inferInsert, "name">
+  ) {
+    const [data] = await this.db
+      .update(category)
+      .set({ ...values })
+      .where(eq(category.id, categoryId))
+      .returning();
+    return data;
+  }
+
+  /**
+   * カテゴリーを削除する
+   * @param categoryId
+   * @returns
+   */
+  async deleteCategory(categoryId: string) {
+    const [data] = await this.db
+      .delete(category)
+      .where(eq(category.id, categoryId))
+      .returning();
+    return data;
+  }
 }
