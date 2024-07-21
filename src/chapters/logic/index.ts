@@ -8,6 +8,14 @@ import { asc, eq } from "drizzle-orm";
 export class ChapterLogic {
   constructor(private db: PostgresJsDatabase<typeof schema>) {}
 
+  async checkChapterExists(chapterId: string) {
+    const [existChapter] = await this.db
+      .select()
+      .from(chapter)
+      .where(eq(chapter.id, chapterId));
+    return !!existChapter;
+  }
+
   /**
    * チャプターを登録する
    * @param values
@@ -34,7 +42,7 @@ export class ChapterLogic {
   }
 
   /**
-   * 講座に紐づくチャプターを取得する
+   * 講座に紐づくチャプターを一覧取得する
    * @param courseId
    * @returns
    */
@@ -45,5 +53,32 @@ export class ChapterLogic {
       .where(eq(chapter.courseId, courseId))
       .orderBy(asc(chapter.position));
     return chapters;
+  }
+
+  async getChapter(chapterId: string) {
+    const [data] = await this.db
+      .select()
+      .from(chapter)
+      .where(eq(chapter.id, chapterId));
+    return data;
+  }
+
+  /**
+   * チャプターを更新する
+   * @param id
+   * @param updateData
+   * @returns
+   */
+  async updateChapter(
+    id: string,
+    updateData: Partial<Omit<typeof chapter.$inferInsert, "id" | "createDate">>
+  ) {
+    const currentJsDate = getJstDate();
+    const [data] = await this.db
+      .update(chapter)
+      .set({ ...updateData, updateDate: currentJsDate })
+      .where(eq(chapter.id, id))
+      .returning();
+    return data;
   }
 }

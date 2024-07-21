@@ -46,7 +46,8 @@ Category.post(
     if (!auth?.userId) {
       return c.json({ error: Messages.MSG_ERR_001 }, 401);
     }
-    if (auth.userId !== c.env.ADMIN_USER_ID) {
+    const isAdmin = auth.userId === c.env.ADMIN_USER_ID;
+    if (!isAdmin) {
       return c.json({ error: Messages.MSG_ERR_002 }, 401);
     }
 

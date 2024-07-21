@@ -11,6 +11,7 @@ export const Messages = {
 export enum Entity {
   COURSE = "講座",
   CATEGORY = "カテゴリー",
+  CHAPTER = "チャプター",
 }
 
 export enum Property {
