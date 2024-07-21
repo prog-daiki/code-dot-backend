@@ -49,4 +49,22 @@ export class CategoryLogic {
       .returning();
     return data;
   }
+
+  /**
+   * カテゴリーを更新する
+   * @param categoryId
+   * @param values
+   * @returns
+   */
+  async updateCategory(
+    categoryId: string,
+    values: Pick<typeof category.$inferInsert, "name">
+  ) {
+    const [data] = await this.db
+      .update(category)
+      .set({ ...values })
+      .where(eq(category.id, categoryId))
+      .returning();
+    return data;
+  }
 }
