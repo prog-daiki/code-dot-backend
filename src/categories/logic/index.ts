@@ -67,4 +67,17 @@ export class CategoryLogic {
       .returning();
     return data;
   }
+
+  /**
+   * カテゴリーを削除する
+   * @param categoryId
+   * @returns
+   */
+  async deleteCategory(categoryId: string) {
+    const [data] = await this.db
+      .delete(category)
+      .where(eq(category.id, categoryId))
+      .returning();
+    return data;
+  }
 }

@@ -152,4 +152,45 @@ Category.put(
   }
 );
 
+/**
+ * カテゴリー削除API
+ */
+Category.delete(
+  "/:category_id",
+  zValidator(
+    "param",
+    z.object({
+      category_id: z.string().optional(),
+    })
+  ),
+  async (c) => {
+    // 認証チェック
+    const auth = getAuth(c);
+    if (!auth?.userId) {
+      return c.json({ error: Messages.MSG_ERR_001 }, 401);
+    }
+    const isAdmin = auth.userId === c.env.ADMIN_USER_ID;
+    if (!isAdmin) {
+      return c.json({ error: Messages.MSG_ERR_002 }, 401);
+    }
+
+    // パスパラメータを取得
+    const { category_id: categoryId } = c.req.valid("param");
+
+    // データベース接続
+    const db = getDbConnection(c.env.DATABASE_URL);
+    const categoryLogic = new CategoryLogic(db);
+
+    // カテゴリーの存在チェック
+    if (!categoryId || !(await categoryLogic.checkCategoryExists(categoryId))) {
+      return c.json({ error: Messages.MSG_ERR_003(Entity.CATEGORY) }, 404);
+    }
+
+    // データベースへの削除
+    const category = await categoryLogic.deleteCategory(categoryId);
+
+    return c.json(category);
+  }
+);
+
 export default Category;
