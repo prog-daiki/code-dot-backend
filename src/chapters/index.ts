@@ -102,11 +102,21 @@ Chapter.get(
 
     // DBから取得
     const chapter = await chapterLogic.getChapter(chapterId);
+    const course = await courseLogic.getCourse(courseId);
 
     // チャプターの公開チェック
     const isAdmin = auth.userId === c.env.ADMIN_USER_ID;
-    if (!isAdmin && chapter.publishFlag === false) {
-      return c.json({ error: Messages.MSG_ERR_003(Entity.CHAPTER) }, 404);
+    if (isAdmin) {
+      return c.json(chapter);
+    }
+
+    // 講座の公開＆削除チェック
+    if (course.publishFlag === false || course.deleteFlag === true) {
+      return c.json({ error: Messages.MSG_ERR_002 }, 401);
+    }
+
+    if (chapter.publishFlag === false) {
+      return c.json({ error: Messages.MSG_ERR_002 }, 401);
     }
 
     return c.json(chapter);
