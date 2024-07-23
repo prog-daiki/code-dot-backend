@@ -29,13 +29,32 @@ Course.get("/", async (c) => {
   const courses = await courseLogic.getCourses();
 
   // 講座の削除・公開チェック
+  const filteredCourses = courses.filter(
+    (course) => course.deleteFlag === false && course.publishFlag === true
+  );
+  return c.json(filteredCourses);
+});
+
+/**
+ * 講座一覧取得API（管理者）
+ */
+Course.get("/admin", async (c) => {
+  // 認証チェック
+  const auth = getAuth(c);
+  if (!auth?.userId) {
+    return c.json({ error: Messages.MSG_ERR_001 }, 401);
+  }
   const isAdmin = auth.userId === c.env.ADMIN_USER_ID;
   if (!isAdmin) {
-    const filteredCourses = courses.filter(
-      (course) => course.deleteFlag === false && course.publishFlag === true
-    );
-    return c.json(filteredCourses);
+    return c.json({ error: Messages.MSG_ERR_002 }, 401);
   }
+
+  // データベース接続
+  const db = getDbConnection(c.env.DATABASE_URL);
+  const courseLogic = new CourseLogic(db);
+
+  // データベースから取得
+  const courses = await courseLogic.getCourses();
 
   return c.json(courses);
 });

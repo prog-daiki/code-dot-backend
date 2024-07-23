@@ -150,7 +150,7 @@ Chapter.post(
     if (!values.title) {
       return c.json({ error: Messages.MSG_ERR_004(Property.TITLE) }, 400);
     }
-    if (values.title.length >= 100) {
+    if (values.title.length > 100) {
       return c.json(
         { error: Messages.MSG_ERR_005(Property.TITLE, Length.TITLE) },
         400
