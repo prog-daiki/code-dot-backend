@@ -12,7 +12,7 @@ import { CategoryLogic } from "../categories/logic";
 const Course = new Hono<{ Bindings: Env }>();
 
 /**
- * 講座一覧取得API
+ * 講座一覧取得API(ユーザー)
  */
 Course.get("/", async (c) => {
   // 認証チェック
@@ -28,11 +28,7 @@ Course.get("/", async (c) => {
   // データベースから取得
   const courses = await courseLogic.getCourses();
 
-  // 講座の削除・公開チェック
-  const filteredCourses = courses.filter(
-    (course) => course.deleteFlag === false && course.publishFlag === true
-  );
-  return c.json(filteredCourses);
+  return c.json(courses);
 });
 
 /**
@@ -54,13 +50,13 @@ Course.get("/admin", async (c) => {
   const courseLogic = new CourseLogic(db);
 
   // データベースから取得
-  const courses = await courseLogic.getCourses();
+  const courses = await courseLogic.getCoursesByAdmin();
 
   return c.json(courses);
 });
 
 /**
- * 講座取得API
+ * 講座取得API（ユーザー）
  */
 Course.get(
   "/:course_id",
@@ -92,11 +88,46 @@ Course.get(
     // データベースから取得
     const course = await courseLogic.getCourse(courseId);
 
-    // 講座の削除・公開チェック
+    return c.json(course);
+  }
+);
+
+/**
+ * 講座取得API（管理者）
+ */
+Course.get(
+  "/:course_id",
+  zValidator(
+    "param",
+    z.object({
+      course_id: z.string().optional(),
+    })
+  ),
+  async (c) => {
+    // 認証チェック
+    const auth = getAuth(c);
+    if (!auth?.userId) {
+      return c.json({ error: Messages.MSG_ERR_001 }, 401);
+    }
     const isAdmin = auth.userId === c.env.ADMIN_USER_ID;
-    if ((course.deleteFlag || !course.publishFlag) && !isAdmin) {
+    if (!isAdmin) {
+      return c.json({ error: Messages.MSG_ERR_002 }, 401);
+    }
+
+    // パスパラメータの取得
+    const { course_id: courseId } = c.req.valid("param");
+
+    // データベース接続
+    const db = getDbConnection(c.env.DATABASE_URL);
+    const courseLogic = new CourseLogic(db);
+
+    // 講座の存在チェック
+    if (!courseId || !(await courseLogic.checkCourseExists(courseId))) {
       return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
     }
+
+    // データベースから取得
+    const course = await courseLogic.getCourseByAdmin(courseId);
 
     return c.json(course);
   }
