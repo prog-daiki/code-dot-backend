@@ -1,7 +1,7 @@
 import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import * as schema from "../../../db/schema";
 import { course } from "../../../db/schema";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { getJstDate } from "../../sharedInfo/date";
 import { createId } from "@paralleldrive/cuid2";
 
@@ -34,16 +34,47 @@ export class CourseLogic {
     const [data] = await this.db
       .select()
       .from(course)
+      .where(
+        and(
+          eq(course.id, courseId),
+          eq(course.deleteFlag, false),
+          eq(course.publishFlag, true)
+        )
+      );
+    return data;
+  }
+
+  /**
+   * 講座を取得する（管理者）
+   * @param courseId
+   * @returns
+   */
+  async getCourseByAdmin(courseId: string) {
+    const [data] = await this.db
+      .select()
+      .from(course)
       .where(eq(course.id, courseId));
     return data;
   }
 
   /**
-   * 講座を一覧取得する
+   * 講座を一覧取得する (管理者)
+   * @returns
+   */
+  async getCoursesByAdmin() {
+    const data = await this.db.select().from(course);
+    return data;
+  }
+
+  /**
+   * 講座を一覧取得する (ユーザー)
    * @returns
    */
   async getCourses() {
-    const data = await this.db.select().from(course);
+    const data = await this.db
+      .select()
+      .from(course)
+      .where(and(eq(course.deleteFlag, false), eq(course.publishFlag, true)));
     return data;
   }
 

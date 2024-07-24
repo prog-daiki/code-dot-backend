@@ -40,16 +40,26 @@ Chapter.get(
       return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
     }
 
+    const course = await courseLogic.getCourse(courseId);
     const chapters = await chapterLogic.getChapters(courseId);
 
-    if (auth.userId !== c.env.ADMIN_USER_ID) {
-      const filteredChapters = chapters.filter(
-        (chapter) => chapter.publishFlag === true
-      );
-      return c.json(filteredChapters);
+    // 講座の公開チェック
+    const isAdmin = auth.userId === c.env.ADMIN_USER_ID;
+
+    if (isAdmin) {
+      return c.json(chapters);
     }
 
-    return c.json(chapters);
+    // 講座の公開＆削除チェック
+    if (course.publishFlag === false || course.deleteFlag === true) {
+      return c.json({ error: Messages.MSG_ERR_002 }, 401);
+    }
+
+    const filteredChapters = chapters.filter(
+      (chapter) => chapter.publishFlag === true
+    );
+
+    return c.json(filteredChapters);
   }
 );
 
@@ -92,11 +102,21 @@ Chapter.get(
 
     // DBから取得
     const chapter = await chapterLogic.getChapter(chapterId);
+    const course = await courseLogic.getCourse(courseId);
 
     // チャプターの公開チェック
     const isAdmin = auth.userId === c.env.ADMIN_USER_ID;
-    if (!isAdmin && chapter.publishFlag === false) {
-      return c.json({ error: Messages.MSG_ERR_003(Entity.CHAPTER) }, 404);
+    if (isAdmin) {
+      return c.json(chapter);
+    }
+
+    // 講座の公開＆削除チェック
+    if (course.publishFlag === false || course.deleteFlag === true) {
+      return c.json({ error: Messages.MSG_ERR_002 }, 401);
+    }
+
+    if (chapter.publishFlag === false) {
+      return c.json({ error: Messages.MSG_ERR_002 }, 401);
     }
 
     return c.json(chapter);
@@ -130,7 +150,7 @@ Chapter.post(
     if (!values.title) {
       return c.json({ error: Messages.MSG_ERR_004(Property.TITLE) }, 400);
     }
-    if (values.title.length >= 100) {
+    if (values.title.length > 100) {
       return c.json(
         { error: Messages.MSG_ERR_005(Property.TITLE, Length.TITLE) },
         400
