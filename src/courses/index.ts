@@ -191,15 +191,7 @@ Course.put(
     }
 
     // バリデーションチェック
-    const values = c.req.valid("json");
-    if (values.description && values.description.length > 1000) {
-      return c.json(
-        {
-          error: Messages.MSG_ERR_005(Property.DESCRIPTION, Length.DESCRIPTION),
-        },
-        400
-      );
-    }
+    const validatedData = c.req.valid("json");
 
     // データベース接続
     const db = getDbConnection(c.env.DATABASE_URL);
@@ -213,7 +205,7 @@ Course.put(
     }
 
     // データベースへの更新
-    const course = await courseLogic.updateCourse(courseId, values);
+    const course = await courseLogic.updateCourse(courseId, validatedData);
 
     return c.json(course);
   }
