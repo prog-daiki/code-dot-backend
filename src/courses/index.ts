@@ -48,10 +48,6 @@ Course.get(
     if (!auth?.userId) {
       return c.json({ error: Messages.MSG_ERR_001 }, 401);
     }
-    const isAdmin = auth.userId === c.env.ADMIN_USER_ID;
-    if (!isAdmin) {
-      return c.json({ error: Messages.MSG_ERR_002 }, 401);
-    }
 
     // パスパラメータの取得
     const { course_id: courseId } = c.req.valid("param");
