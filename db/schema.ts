@@ -7,6 +7,7 @@ import {
   timestamp,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
 
 export const category = pgTable("category", {
   id: text("id").primaryKey(),
@@ -79,6 +80,13 @@ export const chaptersRelations = relations(chapter, ({ one }) => ({
   }),
 }));
 
-export const insertCourseSchema = createInsertSchema(course);
+export const insertCourseSchema = createInsertSchema(course).extend({
+  title: z
+    .string()
+    .min(1, "タイトルは1文字以上です")
+    .max(100, "タイトルは100文字以内です")
+    .regex(/^[\p{L}\p{N}\s\-_]+$/u, "タイトルに無効な文字が含まれています"),
+});
+
 export const insertCategorySchema = createInsertSchema(category);
 export const insertChapterSchema = createInsertSchema(chapter);

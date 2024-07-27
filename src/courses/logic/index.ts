@@ -34,47 +34,16 @@ export class CourseLogic {
     const [data] = await this.db
       .select()
       .from(course)
-      .where(
-        and(
-          eq(course.id, courseId),
-          eq(course.deleteFlag, false),
-          eq(course.publishFlag, true)
-        )
-      );
-    return data;
-  }
-
-  /**
-   * 講座を取得する（管理者）
-   * @param courseId
-   * @returns
-   */
-  async getCourseByAdmin(courseId: string) {
-    const [data] = await this.db
-      .select()
-      .from(course)
       .where(eq(course.id, courseId));
     return data;
   }
 
   /**
-   * 講座を一覧取得する (管理者)
-   * @returns
-   */
-  async getCoursesByAdmin() {
-    const data = await this.db.select().from(course);
-    return data;
-  }
-
-  /**
-   * 講座を一覧取得する (ユーザー)
+   * 講座を一覧取得する
    * @returns
    */
   async getCourses() {
-    const data = await this.db
-      .select()
-      .from(course)
-      .where(and(eq(course.deleteFlag, false), eq(course.publishFlag, true)));
+    const data = await this.db.select().from(course);
     return data;
   }
 

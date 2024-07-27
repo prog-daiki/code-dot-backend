@@ -55,6 +55,11 @@ export class ChapterLogic {
     return chapters;
   }
 
+  /**
+   * チャプター取得する
+   * @param chapterId
+   * @returns
+   */
   async getChapter(chapterId: string) {
     const [data] = await this.db
       .select()

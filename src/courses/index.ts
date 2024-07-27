@@ -12,7 +12,7 @@ import { CategoryLogic } from "../categories/logic";
 const Course = new Hono<{ Bindings: Env }>();
 
 /**
- * 講座一覧取得API(ユーザー)
+ * 講座一覧取得API
  */
 Course.get("/", async (c) => {
   // 認証チェック
@@ -32,38 +32,14 @@ Course.get("/", async (c) => {
 });
 
 /**
- * 講座一覧取得API（管理者）
- */
-Course.get("/admin", async (c) => {
-  // 認証チェック
-  const auth = getAuth(c);
-  if (!auth?.userId) {
-    return c.json({ error: Messages.MSG_ERR_001 }, 401);
-  }
-  const isAdmin = auth.userId === c.env.ADMIN_USER_ID;
-  if (!isAdmin) {
-    return c.json({ error: Messages.MSG_ERR_002 }, 401);
-  }
-
-  // データベース接続
-  const db = getDbConnection(c.env.DATABASE_URL);
-  const courseLogic = new CourseLogic(db);
-
-  // データベースから取得
-  const courses = await courseLogic.getCoursesByAdmin();
-
-  return c.json(courses);
-});
-
-/**
- * 講座取得API（ユーザー）
+ * 講座取得API
  */
 Course.get(
   "/:course_id",
   zValidator(
     "param",
     z.object({
-      course_id: z.string().optional(),
+      course_id: z.string(),
     })
   ),
   async (c) => {
@@ -81,53 +57,13 @@ Course.get(
     const courseLogic = new CourseLogic(db);
 
     // 講座の存在チェック
-    if (!courseId || !(await courseLogic.checkCourseExists(courseId))) {
+    const existsCourse = await courseLogic.checkCourseExists(courseId);
+    if (!existsCourse) {
       return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
     }
 
     // データベースから取得
     const course = await courseLogic.getCourse(courseId);
-
-    return c.json(course);
-  }
-);
-
-/**
- * 講座取得API（管理者）
- */
-Course.get(
-  "/:course_id",
-  zValidator(
-    "param",
-    z.object({
-      course_id: z.string().optional(),
-    })
-  ),
-  async (c) => {
-    // 認証チェック
-    const auth = getAuth(c);
-    if (!auth?.userId) {
-      return c.json({ error: Messages.MSG_ERR_001 }, 401);
-    }
-    const isAdmin = auth.userId === c.env.ADMIN_USER_ID;
-    if (!isAdmin) {
-      return c.json({ error: Messages.MSG_ERR_002 }, 401);
-    }
-
-    // パスパラメータの取得
-    const { course_id: courseId } = c.req.valid("param");
-
-    // データベース接続
-    const db = getDbConnection(c.env.DATABASE_URL);
-    const courseLogic = new CourseLogic(db);
-
-    // 講座の存在チェック
-    if (!courseId || !(await courseLogic.checkCourseExists(courseId))) {
-      return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
-    }
-
-    // データベースから取得
-    const course = await courseLogic.getCourseByAdmin(courseId);
 
     return c.json(course);
   }
@@ -145,36 +81,35 @@ Course.post(
     })
   ),
   async (c) => {
-    // 認証チェック
-    const auth = getAuth(c);
-    if (!auth?.userId) {
-      return c.json({ error: Messages.MSG_ERR_001 }, 401);
-    }
-    const isAdmin = auth.userId === c.env.ADMIN_USER_ID;
-    if (!isAdmin) {
-      return c.json({ error: Messages.MSG_ERR_002 }, 401);
-    }
+    try {
+      // 認証チェック
+      const auth = getAuth(c);
+      if (!auth?.userId) {
+        return c.json({ error: Messages.MSG_ERR_001 }, 401);
+      }
+      const isAdmin = auth.userId === c.env.ADMIN_USER_ID;
+      if (!isAdmin) {
+        return c.json({ error: Messages.MSG_ERR_002 }, 401);
+      }
 
-    // バリデーションチェック
-    const values = c.req.valid("json");
-    if (!values.title) {
-      return c.json({ error: Messages.MSG_ERR_004(Property.TITLE) }, 400);
-    }
-    if (values.title.length > 100) {
-      return c.json(
-        { error: Messages.MSG_ERR_005(Property.TITLE, Length.TITLE) },
-        400
+      // バリデーションチェック
+      const validatedData = c.req.valid("json");
+
+      // データベース接続
+      const db = getDbConnection(c.env.DATABASE_URL);
+      const courseLogic = new CourseLogic(db);
+
+      // データベースへの登録
+      const course = await courseLogic.registerCourse(
+        validatedData,
+        auth.userId
       );
+
+      return c.json(course);
+    } catch (error) {
+      console.error("講座登録エラー:", error);
+      return c.json({ error: "予期せぬエラーが発生しました" }, 500);
     }
-
-    // データベース接続
-    const db = getDbConnection(c.env.DATABASE_URL);
-    const courseLogic = new CourseLogic(db);
-
-    // データベースへの登録
-    const course = await courseLogic.registerCourse(values, auth.userId);
-
-    return c.json(course);
   }
 );
 
@@ -192,7 +127,7 @@ Course.put(
   zValidator(
     "param",
     z.object({
-      course_id: z.string().optional(),
+      course_id: z.string(),
     })
   ),
   async (c) => {
@@ -224,7 +159,8 @@ Course.put(
 
     // 講座の存在チェック
     const { course_id: courseId } = c.req.valid("param");
-    if (!courseId || !(await courseLogic.checkCourseExists(courseId))) {
+    const existsCourse = await courseLogic.checkCourseExists(courseId);
+    if (!existsCourse) {
       return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
     }
 
@@ -249,7 +185,7 @@ Course.put(
   zValidator(
     "param",
     z.object({
-      course_id: z.string().optional(),
+      course_id: z.string(),
     })
   ),
   async (c) => {
@@ -280,7 +216,8 @@ Course.put(
 
     // 講座の存在チェック
     const { course_id: courseId } = c.req.valid("param");
-    if (!courseId || !(await courseLogic.checkCourseExists(courseId))) {
+    const existsCourse = await courseLogic.checkCourseExists(courseId);
+    if (!existsCourse) {
       return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
     }
 
@@ -305,7 +242,7 @@ Course.put(
   zValidator(
     "param",
     z.object({
-      course_id: z.string().optional(),
+      course_id: z.string(),
     })
   ),
   async (c) => {
@@ -331,7 +268,8 @@ Course.put(
 
     // 講座の存在チェック
     const { course_id: courseId } = c.req.valid("param");
-    if (!courseId || !(await courseLogic.checkCourseExists(courseId))) {
+    const existsCourse = await courseLogic.checkCourseExists(courseId);
+    if (!existsCourse) {
       return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
     }
 
@@ -356,7 +294,7 @@ Course.put(
   zValidator(
     "param",
     z.object({
-      course_id: z.string().optional(),
+      course_id: z.string(),
     })
   ),
   async (c) => {
@@ -383,12 +321,16 @@ Course.put(
 
     // 講座の存在チェック
     const { course_id: courseId } = c.req.valid("param");
-    if (!courseId || !(await courseLogic.checkCourseExists(courseId))) {
+    const existsCourse = await courseLogic.checkCourseExists(courseId);
+    if (!existsCourse) {
       return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
     }
 
     // カテゴリーの存在チェック
-    if (!(await categoryLogic.checkCategoryExists(values.categoryId))) {
+    const existsCategory = await categoryLogic.checkCategoryExists(
+      values.categoryId
+    );
+    if (!existsCategory) {
       return c.json({ error: Messages.MSG_ERR_003(Entity.CATEGORY) }, 404);
     }
 
@@ -413,7 +355,7 @@ Course.put(
   zValidator(
     "param",
     z.object({
-      course_id: z.string().optional(),
+      course_id: z.string(),
     })
   ),
   async (c) => {
@@ -442,7 +384,8 @@ Course.put(
 
     // 講座の存在チェック
     const { course_id: courseId } = c.req.valid("param");
-    if (!courseId || !(await courseLogic.checkCourseExists(courseId))) {
+    const existsCourse = await courseLogic.checkCourseExists(courseId);
+    if (!existsCourse) {
       return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
     }
 
@@ -461,7 +404,7 @@ Course.put(
   zValidator(
     "param",
     z.object({
-      course_id: z.string().optional(),
+      course_id: z.string(),
     })
   ),
   async (c) => {
@@ -483,7 +426,8 @@ Course.put(
     const courseLogic = new CourseLogic(db);
 
     // 講座の存在チェック
-    if (!courseId || !(await courseLogic.checkCourseExists(courseId))) {
+    const existsCourse = await courseLogic.checkCourseExists(courseId);
+    if (!existsCourse) {
       return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
     }
 
