@@ -91,6 +91,10 @@ export const insertCourseSchema = createInsertSchema(course).extend({
     .min(1, "詳細は1文字以上です")
     .max(100, "詳細は100文字以内です")
     .regex(/^[\p{L}\p{N}\s\-_]+$/u, "詳細に無効な文字が含まれています"),
+  imageUrl: z
+    .string()
+    .url("有効なURLを入力してください")
+    .min(1, "サムネイルは必須です"),
 });
 
 export const insertCategorySchema = createInsertSchema(category);
