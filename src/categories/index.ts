@@ -97,7 +97,7 @@ Category.put(
   zValidator(
     "param",
     z.object({
-      category_id: z.string().optional(),
+      category_id: z.string(),
     })
   ),
   async (c) => {
@@ -141,7 +141,8 @@ Category.put(
     const categoryLogic = new CategoryLogic(db);
 
     // カテゴリーの存在チェック
-    if (!categoryId || !(await categoryLogic.checkCategoryExists(categoryId))) {
+    const existsCategory = await categoryLogic.checkCategoryExists(categoryId);
+    if (!existsCategory) {
       return c.json({ error: Messages.MSG_ERR_003(Entity.CATEGORY) }, 404);
     }
 
@@ -160,7 +161,7 @@ Category.delete(
   zValidator(
     "param",
     z.object({
-      category_id: z.string().optional(),
+      category_id: z.string(),
     })
   ),
   async (c) => {
@@ -182,7 +183,8 @@ Category.delete(
     const categoryLogic = new CategoryLogic(db);
 
     // カテゴリーの存在チェック
-    if (!categoryId || !(await categoryLogic.checkCategoryExists(categoryId))) {
+    const existsCategory = await categoryLogic.checkCategoryExists(categoryId);
+    if (!existsCategory) {
       return c.json({ error: Messages.MSG_ERR_003(Entity.CATEGORY) }, 404);
     }
 

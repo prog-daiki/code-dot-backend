@@ -19,7 +19,7 @@ Chapter.get(
   zValidator(
     "param",
     z.object({
-      course_id: z.string().optional(),
+      course_id: z.string(),
     })
   ),
   async (c) => {
@@ -36,30 +36,14 @@ Chapter.get(
 
     // 講座の存在チェック
     const { course_id: courseId } = c.req.valid("param");
-    if (!courseId || !(await courseLogic.checkCourseExists(courseId))) {
+    const existsCourse = await courseLogic.checkCourseExists(courseId);
+    if (!existsCourse) {
       return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
     }
 
-    const course = await courseLogic.getCourse(courseId);
     const chapters = await chapterLogic.getChapters(courseId);
 
-    // 講座の公開チェック
-    const isAdmin = auth.userId === c.env.ADMIN_USER_ID;
-
-    if (isAdmin) {
-      return c.json(chapters);
-    }
-
-    // 講座の公開＆削除チェック
-    if (course.publishFlag === false || course.deleteFlag === true) {
-      return c.json({ error: Messages.MSG_ERR_002 }, 401);
-    }
-
-    const filteredChapters = chapters.filter(
-      (chapter) => chapter.publishFlag === true
-    );
-
-    return c.json(filteredChapters);
+    return c.json(chapters);
   }
 );
 
@@ -71,8 +55,8 @@ Chapter.get(
   zValidator(
     "param",
     z.object({
-      chapter_id: z.string().optional(),
-      course_id: z.string().optional(),
+      chapter_id: z.string(),
+      course_id: z.string(),
     })
   ),
   async (c) => {
@@ -91,33 +75,19 @@ Chapter.get(
     const chapterLogic = new ChapterLogic(db);
 
     // 講座の存在チェック
-    if (!courseId || !(await courseLogic.checkCourseExists(courseId))) {
+    const existsCourse = await courseLogic.checkCourseExists(courseId);
+    if (!existsCourse) {
       return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
     }
 
     // チャプターの存在チェック
-    if (!chapterId || !(await chapterLogic.checkChapterExists(chapterId))) {
+    const existsChapter = await chapterLogic.checkChapterExists(chapterId);
+    if (!existsChapter) {
       return c.json({ error: Messages.MSG_ERR_003(Entity.CHAPTER) }, 404);
     }
 
     // DBから取得
     const chapter = await chapterLogic.getChapter(chapterId);
-    const course = await courseLogic.getCourse(courseId);
-
-    // チャプターの公開チェック
-    const isAdmin = auth.userId === c.env.ADMIN_USER_ID;
-    if (isAdmin) {
-      return c.json(chapter);
-    }
-
-    // 講座の公開＆削除チェック
-    if (course.publishFlag === false || course.deleteFlag === true) {
-      return c.json({ error: Messages.MSG_ERR_002 }, 401);
-    }
-
-    if (chapter.publishFlag === false) {
-      return c.json({ error: Messages.MSG_ERR_002 }, 401);
-    }
 
     return c.json(chapter);
   }
@@ -131,7 +101,7 @@ Chapter.post(
   zValidator(
     "param",
     z.object({
-      course_id: z.string().optional(),
+      course_id: z.string(),
     })
   ),
   zValidator("json", insertChapterSchema.pick({ title: true })),
@@ -165,7 +135,8 @@ Chapter.post(
 
     // 講座の存在チェック
     const { course_id: courseId } = c.req.valid("param");
-    if (!courseId || !(await courseLogic.checkCourseExists(courseId))) {
+    const existsCourse = await courseLogic.checkCourseExists(courseId);
+    if (!existsCourse) {
       return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
     }
 
@@ -184,7 +155,7 @@ Chapter.put(
   zValidator(
     "param",
     z.object({
-      course_id: z.string().optional(),
+      course_id: z.string(),
     })
   ),
   zValidator(
@@ -218,7 +189,8 @@ Chapter.put(
     const courseLogic = new CourseLogic(db);
 
     // 講座の存在チェック
-    if (!courseId || !(await courseLogic.checkCourseExists(courseId))) {
+    const existsCourse = await courseLogic.checkCourseExists(courseId);
+    if (!existsCourse) {
       return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
     }
 
@@ -241,8 +213,8 @@ Chapter.put(
   zValidator(
     "param",
     z.object({
-      chapter_id: z.string().optional(),
-      course_id: z.string().optional(),
+      chapter_id: z.string(),
+      course_id: z.string(),
     })
   ),
   zValidator(
@@ -288,7 +260,8 @@ Chapter.put(
     }
 
     // チャプターの存在チェック
-    if (!chapterId || !(await chapterLogic.checkChapterExists(chapterId))) {
+    const existsChapter = await chapterLogic.checkChapterExists(chapterId);
+    if (!existsChapter) {
       return c.json({ error: Messages.MSG_ERR_003(Entity.CHAPTER) }, 404);
     }
 
@@ -306,8 +279,8 @@ Chapter.put(
   zValidator(
     "param",
     z.object({
-      chapter_id: z.string().optional(),
-      course_id: z.string().optional(),
+      chapter_id: z.string(),
+      course_id: z.string(),
     })
   ),
   zValidator(
@@ -350,12 +323,14 @@ Chapter.put(
     const chapterLogic = new ChapterLogic(db);
 
     // 講座の存在チェック
-    if (!courseId || !(await courseLogic.checkCourseExists(courseId))) {
+    const existsCourse = await courseLogic.checkCourseExists(courseId);
+    if (!existsCourse) {
       return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
     }
 
     // チャプターの存在チェック
-    if (!chapterId || !(await chapterLogic.checkChapterExists(chapterId))) {
+    const existsChapter = await chapterLogic.checkChapterExists(chapterId);
+    if (!existsChapter) {
       return c.json({ error: Messages.MSG_ERR_003(Entity.CHAPTER) }, 404);
     }
 
