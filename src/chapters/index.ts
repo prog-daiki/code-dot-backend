@@ -117,16 +117,7 @@ Chapter.post(
     }
 
     // バリデーションチェック
-    const values = c.req.valid("json");
-    if (!values.title) {
-      return c.json({ error: Messages.MSG_ERR_004(Property.TITLE) }, 400);
-    }
-    if (values.title.length > 100) {
-      return c.json(
-        { error: Messages.MSG_ERR_005(Property.TITLE, Length.TITLE) },
-        400
-      );
-    }
+    const validatedData = c.req.valid("json");
 
     // データベース接続
     const db = getDbConnection(c.env.DATABASE_URL);
@@ -141,7 +132,7 @@ Chapter.post(
     }
 
     // データベースへの登録
-    const chapter = await chapterLogic.registerChapter(values, courseId);
+    const chapter = await chapterLogic.registerChapter(validatedData, courseId);
 
     return c.json(chapter);
   }

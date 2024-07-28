@@ -113,4 +113,10 @@ export const insertCategorySchema = createInsertSchema(category).extend({
     ),
 });
 
-export const insertChapterSchema = createInsertSchema(chapter);
+export const insertChapterSchema = createInsertSchema(chapter).extend({
+  title: z
+    .string()
+    .min(1, "タイトルは1文字以上です")
+    .max(100, "タイトルは100文字以内です")
+    .regex(/^[\p{L}\p{N}\s\-_.,]+$/u, "タイトルに無効な文字が含まれています"),
+});
