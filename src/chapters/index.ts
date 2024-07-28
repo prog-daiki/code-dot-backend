@@ -287,18 +287,7 @@ Chapter.put(
     const { course_id: courseId, chapter_id: chapterId } = c.req.valid("param");
 
     // バリデーションチェック
-    const values = c.req.valid("json");
-    if (!values.description) {
-      return c.json({ error: Messages.MSG_ERR_004(Property.DESCRIPTION) }, 400);
-    }
-    if (values.description.length > 1000) {
-      return c.json(
-        {
-          error: Messages.MSG_ERR_005(Property.DESCRIPTION, Length.DESCRIPTION),
-        },
-        400
-      );
-    }
+    const validatedData = c.req.valid("json");
 
     // データベース接続
     const db = getDbConnection(c.env.DATABASE_URL);
@@ -317,7 +306,7 @@ Chapter.put(
       return c.json({ error: Messages.MSG_ERR_003(Entity.CHAPTER) }, 404);
     }
 
-    const chapter = await chapterLogic.updateChapter(chapterId, values);
+    const chapter = await chapterLogic.updateChapter(chapterId, validatedData);
 
     return c.json(chapter);
   }

@@ -119,4 +119,9 @@ export const insertChapterSchema = createInsertSchema(chapter).extend({
     .min(1, "タイトルは1文字以上です")
     .max(100, "タイトルは100文字以内です")
     .regex(/^[\p{L}\p{N}\s\-_.,]+$/u, "タイトルに無効な文字が含まれています"),
+  description: z
+    .string()
+    .min(1, "詳細は1文字以上です")
+    .max(100, "詳細は100文字以内です")
+    .regex(/^[\p{L}\p{N}\s\-_.,]+$/u, "詳細に無効な文字が含まれています"),
 });
