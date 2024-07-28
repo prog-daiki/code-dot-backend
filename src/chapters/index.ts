@@ -229,16 +229,7 @@ Chapter.put(
     const { course_id: courseId, chapter_id: chapterId } = c.req.valid("param");
 
     // バリデーションチェック
-    const values = c.req.valid("json");
-    if (!values.title) {
-      return c.json({ error: Messages.MSG_ERR_004(Property.TITLE) }, 400);
-    }
-    if (values.title.length > 100) {
-      return c.json(
-        { error: Messages.MSG_ERR_005(Property.TITLE, Length.TITLE) },
-        400
-      );
-    }
+    const validatedData = c.req.valid("json");
 
     // データベース接続
     const db = getDbConnection(c.env.DATABASE_URL);
@@ -246,7 +237,8 @@ Chapter.put(
     const chapterLogic = new ChapterLogic(db);
 
     // 講座の存在チェック
-    if (!courseId || !(await courseLogic.checkCourseExists(courseId))) {
+    const existsCourse = await courseLogic.checkCourseExists(courseId);
+    if (!existsCourse) {
       return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
     }
 
@@ -256,7 +248,7 @@ Chapter.put(
       return c.json({ error: Messages.MSG_ERR_003(Entity.CHAPTER) }, 404);
     }
 
-    const chapter = await chapterLogic.updateChapter(chapterId, values);
+    const chapter = await chapterLogic.updateChapter(chapterId, validatedData);
 
     return c.json(chapter);
   }
