@@ -350,13 +350,7 @@ Course.put(
     }
 
     // バリデーションチェック
-    const values = c.req.valid("json");
-    if (!values.price) {
-      return c.json({ error: Messages.MSG_ERR_004(Property.PRICE) }, 400);
-    }
-    if (values.price < 0 || values.price > 1000000) {
-      return c.json({ error: Messages.MSG_ERR_006(Property.PRICE) }, 400);
-    }
+    const validatedData = c.req.valid("json");
 
     // データベース接続
     const db = getDbConnection(c.env.DATABASE_URL);
@@ -370,7 +364,7 @@ Course.put(
     }
 
     // データベースへの更新
-    const course = await courseLogic.updateCourse(courseId, values);
+    const course = await courseLogic.updateCourse(courseId, validatedData);
 
     return c.json(course);
   }
