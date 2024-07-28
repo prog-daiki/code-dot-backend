@@ -85,8 +85,43 @@ export const insertCourseSchema = createInsertSchema(course).extend({
     .string()
     .min(1, "タイトルは1文字以上です")
     .max(100, "タイトルは100文字以内です")
-    .regex(/^[\p{L}\p{N}\s\-_]+$/u, "タイトルに無効な文字が含まれています"),
+    .regex(/^[\p{L}\p{N}\s\-_.,]+$/u, "タイトルに無効な文字が含まれています"),
+  description: z
+    .string()
+    .min(1, "詳細は1文字以上です")
+    .max(100, "詳細は100文字以内です")
+    .regex(/^[\p{L}\p{N}\s\-_.,]+$/u, "詳細に無効な文字が含まれています"),
+  imageUrl: z
+    .string()
+    .url("有効なURLを入力してください")
+    .min(1, "サムネイルは必須です"),
+  price: z
+    .number()
+    .int()
+    .min(1, "価格は1以上の整数である必要があります")
+    .max(1000000, "価格は100万以下である必要があります"),
 });
 
-export const insertCategorySchema = createInsertSchema(category);
-export const insertChapterSchema = createInsertSchema(chapter);
+export const insertCategorySchema = createInsertSchema(category).extend({
+  name: z
+    .string()
+    .min(1, "カテゴリー名は1文字以上です")
+    .max(100, "カテゴリー名は100文字以内です")
+    .regex(
+      /^[\p{L}\p{N}\s\-_.,]+$/u,
+      "カテゴリー名に無効な文字が含まれています"
+    ),
+});
+
+export const insertChapterSchema = createInsertSchema(chapter).extend({
+  title: z
+    .string()
+    .min(1, "タイトルは1文字以上です")
+    .max(100, "タイトルは100文字以内です")
+    .regex(/^[\p{L}\p{N}\s\-_.,]+$/u, "タイトルに無効な文字が含まれています"),
+  description: z
+    .string()
+    .min(1, "詳細は1文字以上です")
+    .max(100, "詳細は100文字以内です")
+    .regex(/^[\p{L}\p{N}\s\-_.,]+$/u, "詳細に無効な文字が含まれています"),
+});
