@@ -53,31 +53,14 @@ Category.post(
     }
 
     // バリデーションチェック
-    const values = c.req.valid("json");
-    if (!values.name) {
-      return c.json(
-        { error: Messages.MSG_ERR_004(Property.CATEGORY_NAME) },
-        400
-      );
-    }
-    if (values.name.length > 100) {
-      return c.json(
-        {
-          error: Messages.MSG_ERR_005(
-            Property.CATEGORY_NAME,
-            Length.CATEGORY_NAME
-          ),
-        },
-        400
-      );
-    }
+    const validatedData = c.req.valid("json");
 
     // データベース接続
     const db = getDbConnection(c.env.DATABASE_URL);
     const categoryLogic = new CategoryLogic(db);
 
     // データベースへの登録
-    const category = await categoryLogic.registerCategory(values);
+    const category = await categoryLogic.registerCategory(validatedData);
 
     return c.json(category);
   }
