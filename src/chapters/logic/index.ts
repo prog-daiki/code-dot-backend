@@ -1,5 +1,5 @@
 import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import { chapter } from "../../../db/schema";
+import { chapter, muxData } from "../../../db/schema";
 import * as schema from "../../../db/schema";
 import { getJstDate } from "../../sharedInfo/date";
 import { createId } from "@paralleldrive/cuid2";
@@ -8,6 +8,11 @@ import { asc, eq } from "drizzle-orm";
 export class ChapterLogic {
   constructor(private db: PostgresJsDatabase<typeof schema>) {}
 
+  /**
+   * チャプターの存在チェック
+   * @param chapterId
+   * @returns
+   */
   async checkChapterExists(chapterId: string) {
     const [existChapter] = await this.db
       .select()
@@ -64,6 +69,7 @@ export class ChapterLogic {
     const [data] = await this.db
       .select()
       .from(chapter)
+      .leftJoin(muxData, eq(chapter.id, muxData.chapterId))
       .where(eq(chapter.id, chapterId));
     return data;
   }

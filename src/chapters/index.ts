@@ -3,11 +3,13 @@ import { Env } from "..";
 import { zValidator } from "@hono/zod-validator";
 import { insertChapterSchema } from "../../db/schema";
 import { getAuth } from "@hono/clerk-auth";
-import { Entity, Length, Messages, Property } from "../sharedInfo/message";
+import { Entity, Messages } from "../sharedInfo/message";
 import { getDbConnection } from "../../db/drizzle";
 import { z } from "zod";
 import { ChapterLogic } from "./logic";
 import { CourseLogic } from "../courses/logic";
+import Mux from "@mux/mux-node";
+import { MuxDataLogic } from "../muxData/logic";
 
 const Chapter = new Hono<{ Bindings: Env }>();
 
@@ -364,6 +366,88 @@ Chapter.put(
       return c.json({ error: Messages.MSG_ERR_003(Entity.CHAPTER) }, 404);
     }
 
+    const chapter = await chapterLogic.updateChapter(chapterId, validatedData);
+
+    return c.json(chapter);
+  }
+);
+
+/**
+ * チャプター動画編集API
+ */
+Chapter.put(
+  "/:chapter_id/video",
+  zValidator(
+    "param",
+    z.object({
+      chapter_id: z.string(),
+      course_id: z.string(),
+    })
+  ),
+  zValidator(
+    "json",
+    insertChapterSchema.pick({
+      videoUrl: true,
+    })
+  ),
+  async (c) => {
+    // 認証チェック
+    const auth = getAuth(c);
+    if (!auth?.userId) {
+      return c.json({ error: Messages.MSG_ERR_001 }, 401);
+    }
+    const isAdmin = auth.userId === c.env.ADMIN_USER_ID;
+    if (!isAdmin) {
+      return c.json({ error: Messages.MSG_ERR_002 }, 401);
+    }
+
+    // パスパラメータを取得
+    const { course_id: courseId, chapter_id: chapterId } = c.req.valid("param");
+
+    // バリデーションチェック
+    const validatedData = c.req.valid("json");
+
+    // データベース接続
+    const db = getDbConnection(c.env.DATABASE_URL);
+    const courseLogic = new CourseLogic(db);
+    const chapterLogic = new ChapterLogic(db);
+    const muxDataLogic = new MuxDataLogic(db);
+
+    // 講座の存在チェック
+    const existsCourse = await courseLogic.checkCourseExists(courseId);
+    if (!existsCourse) {
+      return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
+    }
+
+    // チャプターの存在チェック
+    const existsChapter = await chapterLogic.checkChapterExists(chapterId);
+    if (!existsChapter) {
+      return c.json({ error: Messages.MSG_ERR_003(Entity.CHAPTER) }, 404);
+    }
+
+    const { video } = new Mux({
+      tokenId: c.env.MUX_TOKEN_ID!,
+      tokenSecret: c.env.MUX_TOKEN_SECRET!,
+    });
+
+    // muxDataの存在チェック
+    const existsMuxData = await muxDataLogic.checkMuxDataExists(chapterId);
+    if (existsMuxData) {
+      await video.assets.delete(existsMuxData.assetId);
+      await muxDataLogic.deleteMuxData(chapterId);
+    }
+
+    const asset = await video.assets.create({
+      input: validatedData.videoUrl as any,
+      playback_policy: ["public"],
+      test: false,
+    });
+
+    await muxDataLogic.registerMuxData(
+      chapterId,
+      asset.id,
+      asset.playback_ids![0].id
+    );
     const chapter = await chapterLogic.updateChapter(chapterId, validatedData);
 
     return c.json(chapter);

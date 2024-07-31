@@ -56,6 +56,15 @@ export const chapter = pgTable("chapter", {
   updateDate: timestamp("update_date", { mode: "date" }).notNull(),
 });
 
+export const muxData = pgTable("mux_data", {
+  id: text("id").primaryKey(),
+  assetId: text("asset_id").notNull(),
+  playbackId: text("playback_id"),
+  chapterId: text("chapter_id").references(() => chapter.id, {
+    onDelete: "cascade",
+  }),
+});
+
 export const courseRelations = relations(course, ({ many }) => ({
   categories: many(category),
   attachments: many(attachment),
@@ -77,6 +86,13 @@ export const chaptersRelations = relations(chapter, ({ one }) => ({
   course: one(course, {
     fields: [chapter.courseId],
     references: [course.id],
+  }),
+}));
+
+export const muxDataRelations = relations(muxData, ({ one }) => ({
+  chapter: one(chapter, {
+    fields: [muxData.chapterId],
+    references: [chapter.id],
   }),
 }));
 
@@ -124,4 +140,8 @@ export const insertChapterSchema = createInsertSchema(chapter).extend({
     .min(1, "詳細は1文字以上です")
     .max(100, "詳細は100文字以内です")
     .regex(/^[\p{L}\p{N}\s\-_.,]+$/u, "詳細に無効な文字が含まれています"),
+  videoUrl: z
+    .string()
+    .min(1, "動画URLは必須です")
+    .url("有効なURLを入力してください"),
 });

@@ -10,6 +10,7 @@
     "@clerk/backend": "^1.2.1",
     "@hono/clerk-auth": "^2.0.0",
     "@hono/zod-validator": "^0.2.2",
+    "@mux/mux-node": "^8.8.0",
     "@paralleldrive/cuid2": "^2.2.2",
     "dotenv": "^16.4.5",
     "drizzle-orm": "^0.31.0",

@@ -1,0 +1,1 @@
+ALTER TABLE "mux_data" ALTER COLUMN "asset_id" SET NOT NULL;
