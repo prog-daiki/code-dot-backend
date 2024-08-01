@@ -141,34 +141,39 @@ Course.put(
     })
   ),
   async (c) => {
-    // 認証チェック
-    const auth = getAuth(c);
-    if (!auth?.userId) {
-      return c.json({ error: Messages.MSG_ERR_001 }, 401);
+    try {
+      // 認証チェック
+      const auth = getAuth(c);
+      if (!auth?.userId) {
+        return c.json({ error: Messages.MSG_ERR_001 }, 401);
+      }
+      const isAdmin = auth.userId === c.env.ADMIN_USER_ID;
+      if (!isAdmin) {
+        return c.json({ error: Messages.MSG_ERR_002 }, 401);
+      }
+
+      // バリデーションチェック
+      const validatedData = c.req.valid("json");
+
+      // データベース接続
+      const db = getDbConnection(c.env.DATABASE_URL);
+      const courseLogic = new CourseLogic(db);
+
+      // 講座の存在チェック
+      const { course_id: courseId } = c.req.valid("param");
+      const existsCourse = await courseLogic.checkCourseExists(courseId);
+      if (!existsCourse) {
+        return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
+      }
+
+      // データベースへの更新
+      const course = await courseLogic.updateCourse(courseId, validatedData);
+
+      return c.json(course);
+    } catch (error) {
+      console.error("講座タイトル編集エラー:", error);
+      return c.json({ error: "予期せぬエラーが発生しました" }, 500);
     }
-    const isAdmin = auth.userId === c.env.ADMIN_USER_ID;
-    if (!isAdmin) {
-      return c.json({ error: Messages.MSG_ERR_002 }, 401);
-    }
-
-    // バリデーションチェック
-    const validatedData = c.req.valid("json");
-
-    // データベース接続
-    const db = getDbConnection(c.env.DATABASE_URL);
-    const courseLogic = new CourseLogic(db);
-
-    // 講座の存在チェック
-    const { course_id: courseId } = c.req.valid("param");
-    const existsCourse = await courseLogic.checkCourseExists(courseId);
-    if (!existsCourse) {
-      return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
-    }
-
-    // データベースへの更新
-    const course = await courseLogic.updateCourse(courseId, validatedData);
-
-    return c.json(course);
   }
 );
 
