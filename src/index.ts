@@ -8,6 +8,8 @@ import Chapter from "./chapters";
 export type Env = {
   DATABASE_URL: string;
   ADMIN_USER_ID: string;
+  MUX_TOKEN_ID: string;
+  MUX_TOKEN_SECRET: string;
 };
 
 const app = new Hono<{ Bindings: Env }>().basePath("/api");
