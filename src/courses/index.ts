@@ -15,20 +15,25 @@ const Course = new Hono<{ Bindings: Env }>();
  * 講座一覧取得API
  */
 Course.get("/", async (c) => {
-  // 認証チェック
-  const auth = getAuth(c);
-  if (!auth?.userId) {
-    return c.json({ error: Messages.MSG_ERR_001 }, 401);
+  try {
+    // 認証チェック
+    const auth = getAuth(c);
+    if (!auth?.userId) {
+      return c.json({ error: Messages.MSG_ERR_001 }, 401);
+    }
+
+    // データベース接続
+    const db = getDbConnection(c.env.DATABASE_URL);
+    const courseLogic = new CourseLogic(db);
+
+    // データベースから取得
+    const courses = await courseLogic.getCourses();
+
+    return c.json(courses);
+  } catch (error) {
+    console.error("講座一覧取得エラー:", error);
+    return c.json({ error: "予期せぬエラーが発生しました" }, 500);
   }
-
-  // データベース接続
-  const db = getDbConnection(c.env.DATABASE_URL);
-  const courseLogic = new CourseLogic(db);
-
-  // データベースから取得
-  const courses = await courseLogic.getCourses();
-
-  return c.json(courses);
 });
 
 /**
