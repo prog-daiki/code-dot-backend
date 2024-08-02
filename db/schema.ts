@@ -115,7 +115,7 @@ export const insertCourseSchema = createInsertSchema(course).extend({
     .number()
     .int()
     .min(1, "価格は1以上の整数である必要があります")
-    .max(1000000, "価格は100万以下である必要があります"),
+    .max(1000000, "価格は100万以下の整数である必要があります"),
 });
 
 export const insertCategorySchema = createInsertSchema(category).extend({
