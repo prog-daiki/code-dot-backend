@@ -12,6 +12,7 @@ import { validateAdmin } from "../../auth/validateAdmin";
 import { CourseUseCase } from "./useCase";
 import { CourseNotFoundError } from "../../error/CourseNotFoundError";
 import { HandleError } from "../../error/HandleError";
+import { CategoryNotFoundError } from "../../error/CategoryNotFoundError";
 
 const Course = new Hono<{ Bindings: Env }>();
 
@@ -289,59 +290,29 @@ Course.put(
  */
 Course.put(
   "/:course_id/category",
-  zValidator(
-    "json",
-    insertCourseSchema.pick({
-      categoryId: true,
-    })
-  ),
-  zValidator(
-    "param",
-    z.object({
-      course_id: z.string(),
-    })
-  ),
+  validateAdmin,
+  zValidator("json", insertCourseSchema.pick({ categoryId: true })),
+  zValidator("param", z.object({ course_id: z.string() })),
   async (c) => {
-    // 認証チェック
-    const auth = getAuth(c);
-    if (!auth?.userId) {
-      return c.json({ error: Messages.MSG_ERR_001 }, 401);
+    try {
+      const validatedData = c.req.valid("json");
+      const { course_id: courseId } = c.req.valid("param");
+      const db = getDbConnection(c.env.DATABASE_URL);
+      const courseUseCase = new CourseUseCase(db);
+      const course = await courseUseCase.updateCourseCategory(
+        courseId,
+        validatedData.categoryId
+      );
+      return c.json(course);
+    } catch (error) {
+      if (error instanceof CourseNotFoundError) {
+        return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
+      }
+      if (error instanceof CategoryNotFoundError) {
+        return c.json({ error: Messages.MSG_ERR_003(Entity.CATEGORY) }, 404);
+      }
+      return HandleError(c, error, "講座カテゴリー編集エラー");
     }
-    const isAdmin = auth.userId === c.env.ADMIN_USER_ID;
-    if (!isAdmin) {
-      return c.json({ error: Messages.MSG_ERR_002 }, 401);
-    }
-
-    // バリデーションチェック
-    const values = c.req.valid("json");
-    if (!values.categoryId) {
-      return c.json({ error: Messages.MSG_ERR_004(Property.CATEGORY_ID) }, 400);
-    }
-
-    // データベース接続
-    const db = getDbConnection(c.env.DATABASE_URL);
-    const courseLogic = new CourseLogic(db);
-    const categoryLogic = new CategoryLogic(db);
-
-    // 講座の存在チェック
-    const { course_id: courseId } = c.req.valid("param");
-    const existsCourse = await courseLogic.checkCourseExists(courseId);
-    if (!existsCourse) {
-      return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
-    }
-
-    // カテゴリーの存在チェック
-    const existsCategory = await categoryLogic.checkCategoryExists(
-      values.categoryId
-    );
-    if (!existsCategory) {
-      return c.json({ error: Messages.MSG_ERR_003(Entity.CATEGORY) }, 404);
-    }
-
-    // データベースへの更新
-    const result = await courseLogic.updateCourse(courseId, values);
-
-    return c.json(result);
   }
 );
 

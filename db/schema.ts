@@ -116,6 +116,7 @@ export const insertCourseSchema = createInsertSchema(course).extend({
     .int()
     .min(0, "価格は0以上の整数である必要があります")
     .max(1000000, "価格は100万以下の整数である必要があります"),
+  categoryId: z.string().min(1, "カテゴリーIDは必須です"),
 });
 
 export const insertCategorySchema = createInsertSchema(category).extend({
