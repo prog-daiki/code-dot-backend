@@ -47,4 +47,24 @@ export class ChapterUseCase {
     const chapter = await chapterRepository.getChapter(chapterId);
     return chapter;
   }
+
+  /**
+   * 講座のチャプターを登録する
+   * @param title
+   * @param courseId
+   * @returns
+   */
+  async registerChapter(title: string, courseId: string) {
+    const chapterRepository = new ChapterRepository(this.db);
+    const courseRepository = new CourseRepository(this.db);
+    const existsCourse = await courseRepository.checkCourseExists(courseId);
+    if (!existsCourse) {
+      throw new CourseNotFoundError();
+    }
+    const chapter = await chapterRepository.registerChapter(
+      { title },
+      courseId
+    );
+    return chapter;
+  }
 }

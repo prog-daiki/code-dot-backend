@@ -15,6 +15,7 @@ import { ChapterUseCase } from "./useCase";
 import { HandleError } from "../../error/HandleError";
 import { CourseNotFoundError } from "../../error/CourseNotFoundError";
 import { ChapterNotFoundError } from "../../error/ChapterNotFoundError";
+import { validateAdmin } from "../../auth/validateAdmin";
 
 const Chapter = new Hono<{ Bindings: Env }>();
 
@@ -76,43 +77,26 @@ Chapter.get(
  */
 Chapter.post(
   "/",
-  zValidator(
-    "param",
-    z.object({
-      course_id: z.string(),
-    })
-  ),
+  validateAdmin,
+  zValidator("param", z.object({ course_id: z.string() })),
   zValidator("json", insertChapterSchema.pick({ title: true })),
   async (c) => {
-    // 認証チェック
-    const auth = getAuth(c);
-    if (!auth?.userId) {
-      return c.json({ error: Messages.MSG_ERR_001 }, 401);
+    try {
+      const validatedData = c.req.valid("json");
+      const { course_id: courseId } = c.req.valid("param");
+      const db = getDbConnection(c.env.DATABASE_URL);
+      const chapterUseCase = new ChapterUseCase(db);
+      const chapter = await chapterUseCase.registerChapter(
+        validatedData.title,
+        courseId
+      );
+      return c.json(chapter);
+    } catch (error) {
+      if (error instanceof CourseNotFoundError) {
+        return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
+      }
+      return HandleError(c, error, "チャプター登録エラー");
     }
-    const isAdmin = auth.userId === c.env.ADMIN_USER_ID;
-    if (!isAdmin) {
-      return c.json({ error: Messages.MSG_ERR_002 }, 401);
-    }
-
-    // バリデーションチェック
-    const validatedData = c.req.valid("json");
-
-    // データベース接続
-    const db = getDbConnection(c.env.DATABASE_URL);
-    const chapterLogic = new ChapterLogic(db);
-    const courseLogic = new CourseLogic(db);
-
-    // 講座の存在チェック
-    const { course_id: courseId } = c.req.valid("param");
-    const existsCourse = await courseLogic.checkCourseExists(courseId);
-    if (!existsCourse) {
-      return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
-    }
-
-    // データベースへの登録
-    const chapter = await chapterLogic.registerChapter(validatedData, courseId);
-
-    return c.json(chapter);
   }
 );
 
