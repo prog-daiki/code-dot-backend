@@ -91,4 +91,56 @@ export class ChapterUseCase {
       })
     );
   }
+
+  /**
+   * 講座のチャプターのタイトルを更新する
+   * @param chapterId
+   * @param title
+   * @param courseId
+   * @returns
+   */
+  async updateChapterTitle(chapterId: string, title: string, courseId: string) {
+    const chapterRepository = new ChapterRepository(this.db);
+    const courseRepository = new CourseRepository(this.db);
+    const existsCourse = await courseRepository.checkCourseExists(courseId);
+    if (!existsCourse) {
+      throw new CourseNotFoundError();
+    }
+    const existsChapter = await chapterRepository.checkChapterExists(chapterId);
+    if (!existsChapter) {
+      throw new ChapterNotFoundError();
+    }
+    const chapter = await chapterRepository.updateChapter(chapterId, {
+      title,
+    });
+    return chapter;
+  }
+
+  /**
+   * 講座のチャプターの詳細を更新する
+   * @param chapterId
+   * @param description
+   * @param courseId
+   * @returns
+   */
+  async updateChapterDescription(
+    chapterId: string,
+    description: string,
+    courseId: string
+  ) {
+    const chapterRepository = new ChapterRepository(this.db);
+    const courseRepository = new CourseRepository(this.db);
+    const existsCourse = await courseRepository.checkCourseExists(courseId);
+    if (!existsCourse) {
+      throw new CourseNotFoundError();
+    }
+    const existsChapter = await chapterRepository.checkChapterExists(chapterId);
+    if (!existsChapter) {
+      throw new ChapterNotFoundError();
+    }
+    const chapter = await chapterRepository.updateChapter(chapterId, {
+      description,
+    });
+    return chapter;
+  }
 }
