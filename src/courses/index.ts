@@ -1,13 +1,17 @@
 import { getAuth } from "@hono/clerk-auth";
-import { Hono } from "hono";
+import { Context, Hono } from "hono";
 import { getDbConnection } from "../../db/drizzle";
 import { insertCourseSchema } from "../../db/schema";
 import { Env } from "..";
-import { Entity, Length, Messages, Property } from "../sharedInfo/message";
+import { Entity, Messages, Property } from "../sharedInfo/message";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { CourseLogic } from "./logic";
 import { CategoryLogic } from "../categories/logic";
+import { validateAdmin } from "../auth/validateAdmin";
+import { CourseUseCase } from "./useCase";
+import { CourseNotFoundError } from "../error/CourseNotFoundError";
+import { HandleError } from "../error/HandleError";
 
 const Course = new Hono<{ Bindings: Env }>();
 
@@ -395,12 +399,7 @@ Course.put(
  */
 Course.put(
   "/:course_id/delete",
-  zValidator(
-    "param",
-    z.object({
-      course_id: z.string(),
-    })
-  ),
+  zValidator("param", z.object({ course_id: z.string() })),
   async (c) => {
     // 認証チェック
     const auth = getAuth(c);
@@ -432,6 +431,29 @@ Course.put(
     });
 
     return c.json(course);
+  }
+);
+
+/**
+ * 講座非公開API
+ */
+Course.put(
+  "/:course_id/unpublish",
+  validateAdmin,
+  zValidator("param", z.object({ course_id: z.string() })),
+  async (c) => {
+    try {
+      const { course_id: courseId } = c.req.valid("param");
+      const db = getDbConnection(c.env.DATABASE_URL);
+      const courseUseCase = new CourseUseCase(db);
+      const course = await courseUseCase.unpublishCourse(courseId, c);
+      return c.json(course);
+    } catch (error) {
+      if (error instanceof CourseNotFoundError) {
+        return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
+      }
+      return HandleError(c, error, "講座非公開エラー");
+    }
   }
 );
 

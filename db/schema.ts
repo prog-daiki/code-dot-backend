@@ -138,7 +138,7 @@ export const insertChapterSchema = createInsertSchema(chapter).extend({
   description: z
     .string()
     .min(1, "詳細は1文字以上です")
-    .max(100, "詳細は100文字以内です")
+    .max(1000, "詳細は1000文字以内です")
     .regex(/^[\p{L}\p{N}\s\-_.,]+$/u, "詳細に無効な文字が含まれています"),
   videoUrl: z
     .string()
