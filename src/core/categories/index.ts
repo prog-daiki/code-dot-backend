@@ -1,10 +1,10 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
-import { insertCategorySchema } from "../../db/schema";
+import { insertCategorySchema } from "../../../db/schema";
 import { getAuth } from "@hono/clerk-auth";
-import { Entity, Length, Messages, Property } from "../sharedInfo/message";
-import { Env } from "..";
-import { getDbConnection } from "../../db/drizzle";
+import { Entity, Length, Messages, Property } from "../../sharedInfo/message";
+import { Env } from "../..";
+import { getDbConnection } from "../../../db/drizzle";
 import { CategoryLogic } from "./logic";
 import { z } from "zod";
 

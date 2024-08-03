@@ -1,19 +1,18 @@
 import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import * as schema from "../../../db/schema";
-import { course } from "../../../db/schema";
-import { and, eq } from "drizzle-orm";
-import { getJstDate } from "../../sharedInfo/date";
+import * as schema from "../../../../db/schema";
+import { course } from "../../../../db/schema";
+import { desc, eq } from "drizzle-orm";
+import { getJstDate } from "../../../sharedInfo/date";
 import { createId } from "@paralleldrive/cuid2";
 
 /**
- * 講座のロジックを管理するクラス
+ * 講座のリポジトリを管理するクラス
  */
-export class CourseLogic {
+export class CourseRepository {
   constructor(private db: PostgresJsDatabase<typeof schema>) {}
 
   /**
    * 講座の存在チェック
-   * @param db
    * @param courseId
    * @returns
    */
@@ -43,7 +42,10 @@ export class CourseLogic {
    * @returns
    */
   async getCourses() {
-    const data = await this.db.select().from(course);
+    const data = await this.db
+      .select()
+      .from(course)
+      .orderBy(desc(course.updateDate));
     return data;
   }
 

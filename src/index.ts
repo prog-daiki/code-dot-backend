@@ -1,9 +1,9 @@
 import { Hono } from "hono";
-import Course from "./courses";
+import Course from "./core/courses";
 import { cors } from "hono/cors";
 import { clerkMiddleware } from "@hono/clerk-auth";
-import Category from "./categories";
-import Chapter from "./chapters";
+import Category from "./core/categories";
+import Chapter from "./core/chapters";
 
 export type Env = {
   DATABASE_URL: string;
