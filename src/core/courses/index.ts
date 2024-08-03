@@ -6,7 +6,6 @@ import { Env } from "../..";
 import { Entity, Messages } from "../../sharedInfo/message";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
-import { CourseLogic } from "./repository";
 import { validateAdmin } from "../../auth/validateAdmin";
 import { CourseUseCase } from "./useCase";
 import { CourseNotFoundError } from "../../error/CourseNotFoundError";
@@ -19,25 +18,14 @@ const Course = new Hono<{ Bindings: Env }>();
 /**
  * 講座一覧取得API
  */
-Course.get("/", async (c) => {
+Course.get("/", validateAuth, async (c) => {
   try {
-    // 認証チェック
-    const auth = getAuth(c);
-    if (!auth?.userId) {
-      return c.json({ error: Messages.MSG_ERR_001 }, 401);
-    }
-
-    // データベース接続
     const db = getDbConnection(c.env.DATABASE_URL);
-    const courseLogic = new CourseLogic(db);
-
-    // データベースから取得
-    const courses = await courseLogic.getCourses();
-
+    const courseUseCase = new CourseUseCase(db);
+    const courses = await courseUseCase.getCourses();
     return c.json(courses);
   } catch (error) {
-    console.error("講座一覧取得エラー:", error);
-    return c.json({ error: "予期せぬエラーが発生しました" }, 500);
+    return HandleError(c, error, "講座一覧取得エラー");
   }
 });
 

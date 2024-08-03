@@ -13,6 +13,16 @@ export class CourseUseCase {
   constructor(private db: PostgresJsDatabase<typeof schema>) {}
 
   /**
+   * 講座一覧を取得する
+   * @returns 講座一覧
+   */
+  async getCourses() {
+    const courseRepository = new CourseRepository(this.db);
+    const courses = await courseRepository.getCourses();
+    return courses;
+  }
+
+  /**
    * 講座を取得する
    * @param courseId 講座ID
    * @returns 講座
