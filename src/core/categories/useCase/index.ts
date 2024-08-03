@@ -49,4 +49,21 @@ export class CategoryUseCase {
     });
     return category;
   }
+
+  /**
+   * カテゴリーを削除する
+   * @param categoryId カテゴリーID
+   * @returns 削除したカテゴリー
+   */
+  async deleteCategory(categoryId: string) {
+    const categoryRepository = new CategoryRepository(this.db);
+    const existsCategory = await categoryRepository.checkCategoryExists(
+      categoryId
+    );
+    if (!existsCategory) {
+      throw new CategoryNotFoundError();
+    }
+    const category = await categoryRepository.deleteCategory(categoryId);
+    return category;
+  }
 }
