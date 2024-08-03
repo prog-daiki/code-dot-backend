@@ -11,6 +11,27 @@ export class CourseUseCase {
   constructor(private db: PostgresJsDatabase<typeof schema>) {}
 
   /**
+   * 講座を論理削除する
+   * @param courseId 講座ID
+   * @param c コンテキスト
+   * @returns 講座
+   */
+  async softDeleteCourse(courseId: string, c: Context) {
+    const courseLogic = new CourseLogic(this.db);
+    // 講座の存在チェック
+    const existsCourse = await courseLogic.checkCourseExists(courseId);
+    if (!existsCourse) {
+      throw new CourseNotFoundError();
+    }
+    // データベースへの更新
+    const course = await courseLogic.updateCourse(courseId, {
+      deleteFlag: true,
+      publishFlag: false,
+    });
+    return course;
+  }
+
+  /**
    * 講座を非公開にする
    * @param courseId 講座ID
    * @param c コンテキスト

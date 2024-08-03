@@ -399,38 +399,21 @@ Course.put(
  */
 Course.put(
   "/:course_id/delete",
+  validateAdmin,
   zValidator("param", z.object({ course_id: z.string() })),
   async (c) => {
-    // 認証チェック
-    const auth = getAuth(c);
-    if (!auth?.userId) {
-      return c.json({ error: Messages.MSG_ERR_001 }, 401);
+    try {
+      const { course_id: courseId } = c.req.valid("param");
+      const db = getDbConnection(c.env.DATABASE_URL);
+      const courseUseCase = new CourseUseCase(db);
+      const course = await courseUseCase.softDeleteCourse(courseId, c);
+      return c.json(course);
+    } catch (error) {
+      if (error instanceof CourseNotFoundError) {
+        return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
+      }
+      return HandleError(c, error, "講座論理削除エラー");
     }
-    const isAdmin = auth.userId === c.env.ADMIN_USER_ID;
-    if (!isAdmin) {
-      return c.json({ error: Messages.MSG_ERR_002 }, 401);
-    }
-
-    // パスパラメータを取得
-    const { course_id: courseId } = c.req.valid("param");
-
-    // データベース接続
-    const db = getDbConnection(c.env.DATABASE_URL);
-    const courseLogic = new CourseLogic(db);
-
-    // 講座の存在チェック
-    const existsCourse = await courseLogic.checkCourseExists(courseId);
-    if (!existsCourse) {
-      return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
-    }
-
-    // データベースへの更新
-    const course = await courseLogic.updateCourse(courseId, {
-      deleteFlag: true,
-      publishFlag: false,
-    });
-
-    return c.json(course);
   }
 );
 
