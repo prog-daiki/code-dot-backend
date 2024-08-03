@@ -11,6 +11,24 @@ export class CourseUseCase {
   constructor(private db: PostgresJsDatabase<typeof schema>) {}
 
   /**
+   * 講座の価格を更新する
+   * @param courseId 講座ID
+   * @param price 価格
+   * @returns 講座
+   */
+  async updateCoursePrice(courseId: string, price: number) {
+    const courseLogic = new CourseLogic(this.db);
+    // 講座の存在チェック
+    const existsCourse = await courseLogic.checkCourseExists(courseId);
+    if (!existsCourse) {
+      throw new CourseNotFoundError();
+    }
+    // データベースへの更新
+    const course = await courseLogic.updateCourse(courseId, { price });
+    return course;
+  }
+
+  /**
    * 講座を論理削除する
    * @param courseId 講座ID
    * @param c コンテキスト
