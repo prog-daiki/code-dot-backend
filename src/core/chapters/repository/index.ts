@@ -5,7 +5,7 @@ import { getJstDate } from "../../../sharedInfo/date";
 import { createId } from "@paralleldrive/cuid2";
 import { asc, eq } from "drizzle-orm";
 
-export class ChapterLogic {
+export class ChapterRepository {
   constructor(private db: PostgresJsDatabase<typeof schema>) {}
 
   /**
