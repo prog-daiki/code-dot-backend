@@ -12,6 +12,16 @@ import { CategoryNotFoundError } from "../../../error/CategoryNotFoundError";
 export class CourseUseCase {
   constructor(private db: PostgresJsDatabase<typeof schema>) {}
 
+  async updateCourseTitle(courseId: string, title: string) {
+    const courseRepository = new CourseRepository(this.db);
+    const existsCourse = await courseRepository.checkCourseExists(courseId);
+    if (!existsCourse) {
+      throw new CourseNotFoundError();
+    }
+    const course = await courseRepository.updateCourse(courseId, { title });
+    return course;
+  }
+
   /**
    * 講座の詳細を更新する
    * @param courseId 講座ID
