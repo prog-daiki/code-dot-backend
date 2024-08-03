@@ -1,7 +1,7 @@
 import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import { chapter, muxData } from "../../../db/schema";
-import * as schema from "../../../db/schema";
-import { getJstDate } from "../../sharedInfo/date";
+import { chapter, muxData } from "../../../../db/schema";
+import * as schema from "../../../../db/schema";
+import { getJstDate } from "../../../sharedInfo/date";
 import { createId } from "@paralleldrive/cuid2";
 import { asc, eq } from "drizzle-orm";
 

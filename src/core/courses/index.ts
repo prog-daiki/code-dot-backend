@@ -1,17 +1,17 @@
 import { getAuth } from "@hono/clerk-auth";
 import { Context, Hono } from "hono";
-import { getDbConnection } from "../../db/drizzle";
-import { insertCourseSchema } from "../../db/schema";
-import { Env } from "..";
-import { Entity, Messages, Property } from "../sharedInfo/message";
+import { getDbConnection } from "../../../db/drizzle";
+import { insertCourseSchema } from "../../../db/schema";
+import { Env } from "../..";
+import { Entity, Messages, Property } from "../../sharedInfo/message";
 import { zValidator } from "@hono/zod-validator";
 import { z } from "zod";
 import { CourseLogic } from "./logic";
 import { CategoryLogic } from "../categories/logic";
-import { validateAdmin } from "../auth/validateAdmin";
+import { validateAdmin } from "../../auth/validateAdmin";
 import { CourseUseCase } from "./useCase";
-import { CourseNotFoundError } from "../error/CourseNotFoundError";
-import { HandleError } from "../error/HandleError";
+import { CourseNotFoundError } from "../../error/CourseNotFoundError";
+import { HandleError } from "../../error/HandleError";
 
 const Course = new Hono<{ Bindings: Env }>();
 

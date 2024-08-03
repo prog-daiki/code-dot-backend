@@ -1,8 +1,8 @@
 import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import * as schema from "../../../db/schema";
-import { course } from "../../../db/schema";
+import * as schema from "../../../../db/schema";
+import { course } from "../../../../db/schema";
 import { and, desc, eq } from "drizzle-orm";
-import { getJstDate } from "../../sharedInfo/date";
+import { getJstDate } from "../../../sharedInfo/date";
 import { createId } from "@paralleldrive/cuid2";
 
 /**

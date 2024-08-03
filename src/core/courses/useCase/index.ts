@@ -1,8 +1,8 @@
 import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import * as schema from "../../../db/schema";
+import * as schema from "../../../../db/schema";
 import { CourseLogic } from "../logic";
 import { Context } from "hono";
-import { CourseNotFoundError } from "../../error/CourseNotFoundError";
+import { CourseNotFoundError } from "../../../error/CourseNotFoundError";
 
 /**
  * 講座のuseCaseを管理するクラス

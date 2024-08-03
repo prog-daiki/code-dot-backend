@@ -1,7 +1,7 @@
 import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import * as schema from "../../../db/schema";
+import * as schema from "../../../../db/schema";
 import { asc, eq } from "drizzle-orm";
-import { category } from "../../../db/schema";
+import { category } from "../../../../db/schema";
 import { createId } from "@paralleldrive/cuid2";
 /**
  * カテゴリーのロジックを管理するクラス

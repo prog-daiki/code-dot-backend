@@ -1,6 +1,6 @@
 import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import * as schema from "../../../db/schema";
-import { muxData } from "../../../db/schema";
+import * as schema from "../../../../db/schema";
+import { muxData } from "../../../../db/schema";
 import { eq } from "drizzle-orm";
 import { createId } from "@paralleldrive/cuid2";
 
