@@ -3,8 +3,9 @@ import * as schema from "../../../../db/schema";
 import { CourseRepository } from "../repository";
 import { Context } from "hono";
 import { CourseNotFoundError } from "../../../error/CourseNotFoundError";
-import { CategoryLogic } from "../../categories/repository";
+
 import { CategoryNotFoundError } from "../../../error/CategoryNotFoundError";
+import { CategoryRepository } from "../../categories/repository";
 
 /**
  * 講座のuseCaseを管理するクラス
@@ -123,12 +124,14 @@ export class CourseUseCase {
    */
   async updateCourseCategory(courseId: string, categoryId: string) {
     const courseRepository = new CourseRepository(this.db);
-    const categoryLogic = new CategoryLogic(this.db);
+    const categoryRepository = new CategoryRepository(this.db);
     const existsCourse = await courseRepository.checkCourseExists(courseId);
     if (!existsCourse) {
       throw new CourseNotFoundError();
     }
-    const existsCategory = await categoryLogic.checkCategoryExists(categoryId);
+    const existsCategory = await categoryRepository.checkCategoryExists(
+      categoryId
+    );
     if (!existsCategory) {
       throw new CategoryNotFoundError();
     }

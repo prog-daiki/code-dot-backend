@@ -17,4 +17,15 @@ export class CategoryUseCase {
     const categories = await categoryRepository.getCategories();
     return categories;
   }
+
+  /**
+   * カテゴリーを登録する
+   * @param name カテゴリー名
+   * @returns 登録したカテゴリー
+   */
+  async registerCategory(name: string) {
+    const categoryRepository = new CategoryRepository(this.db);
+    const category = await categoryRepository.registerCategory({ name });
+    return category;
+  }
 }

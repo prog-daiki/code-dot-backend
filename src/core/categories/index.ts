@@ -10,6 +10,7 @@ import { z } from "zod";
 import { validateAuth } from "../../auth/validateAuth";
 import { CategoryUseCase } from "./useCase";
 import { HandleError } from "../../error/HandleError";
+import { validateAdmin } from "../../auth/validateAdmin";
 
 const Category = new Hono<{ Bindings: Env }>();
 
@@ -32,34 +33,20 @@ Category.get("/", validateAuth, async (c) => {
  */
 Category.post(
   "/",
-  zValidator(
-    "json",
-    insertCategorySchema.pick({
-      name: true,
-    })
-  ),
+  validateAdmin,
+  zValidator("json", insertCategorySchema.pick({ name: true })),
   async (c) => {
-    // 認証チェック
-    const auth = getAuth(c);
-    if (!auth?.userId) {
-      return c.json({ error: Messages.MSG_ERR_001 }, 401);
+    try {
+      const validatedData = c.req.valid("json");
+      const db = getDbConnection(c.env.DATABASE_URL);
+      const categoryUseCase = new CategoryUseCase(db);
+      const category = await categoryUseCase.registerCategory(
+        validatedData.name
+      );
+      return c.json(category);
+    } catch (error) {
+      return HandleError(c, error, "カテゴリー登録エラー");
     }
-    const isAdmin = auth.userId === c.env.ADMIN_USER_ID;
-    if (!isAdmin) {
-      return c.json({ error: Messages.MSG_ERR_002 }, 401);
-    }
-
-    // バリデーションチェック
-    const validatedData = c.req.valid("json");
-
-    // データベース接続
-    const db = getDbConnection(c.env.DATABASE_URL);
-    const categoryLogic = new CategoryLogic(db);
-
-    // データベースへの登録
-    const category = await categoryLogic.registerCategory(validatedData);
-
-    return c.json(category);
   }
 );
 
