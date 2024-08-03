@@ -12,6 +12,7 @@ import { CourseUseCase } from "./useCase";
 import { CourseNotFoundError } from "../../error/CourseNotFoundError";
 import { HandleError } from "../../error/HandleError";
 import { CategoryNotFoundError } from "../../error/CategoryNotFoundError";
+import { validateAuth } from "../../auth/validateAuth";
 
 const Course = new Hono<{ Bindings: Env }>();
 
@@ -45,40 +46,20 @@ Course.get("/", async (c) => {
  */
 Course.get(
   "/:course_id",
-  zValidator(
-    "param",
-    z.object({
-      course_id: z.string(),
-    })
-  ),
+  validateAuth,
+  zValidator("param", z.object({ course_id: z.string() })),
   async (c) => {
     try {
-      // 認証チェック
-      const auth = getAuth(c);
-      if (!auth?.userId) {
-        return c.json({ error: Messages.MSG_ERR_001 }, 401);
-      }
-
-      // パスパラメータの取得
       const { course_id: courseId } = c.req.valid("param");
-
-      // データベース接続
       const db = getDbConnection(c.env.DATABASE_URL);
-      const courseLogic = new CourseLogic(db);
-
-      // 講座の存在チェック
-      const existsCourse = await courseLogic.checkCourseExists(courseId);
-      if (!existsCourse) {
-        return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
-      }
-
-      // データベースから取得
-      const course = await courseLogic.getCourse(courseId);
-
+      const courseUseCase = new CourseUseCase(db);
+      const course = await courseUseCase.getCourse(courseId);
       return c.json(course);
     } catch (error) {
-      console.error("講座取得エラー:", error);
-      return c.json({ error: "予期せぬエラーが発生しました" }, 500);
+      if (error instanceof CourseNotFoundError) {
+        return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
+      }
+      return HandleError(c, error, "講座取得エラー");
     }
   }
 );
@@ -102,8 +83,7 @@ Course.post(
       );
       return c.json(course);
     } catch (error) {
-      console.error("講座登録エラー:", error);
-      return c.json({ error: "予期せぬエラーが発生しました" }, 500);
+      return HandleError(c, error, "講座登録エラー");
     }
   }
 );
