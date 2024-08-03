@@ -11,6 +11,7 @@ import { validateAuth } from "../../auth/validateAuth";
 import { CategoryUseCase } from "./useCase";
 import { HandleError } from "../../error/HandleError";
 import { validateAdmin } from "../../auth/validateAdmin";
+import { CategoryNotFoundError } from "../../error/CategoryNotFoundError";
 
 const Category = new Hono<{ Bindings: Env }>();
 
@@ -55,52 +56,26 @@ Category.post(
  */
 Category.put(
   "/:category_id",
-  zValidator(
-    "json",
-    insertCategorySchema.pick({
-      name: true,
-    })
-  ),
-  zValidator(
-    "param",
-    z.object({
-      category_id: z.string(),
-    })
-  ),
+  validateAdmin,
+  zValidator("json", insertCategorySchema.pick({ name: true })),
+  zValidator("param", z.object({ category_id: z.string() })),
   async (c) => {
-    // 認証チェック
-    const auth = getAuth(c);
-    if (!auth?.userId) {
-      return c.json({ error: Messages.MSG_ERR_001 }, 401);
+    try {
+      const { category_id: categoryId } = c.req.valid("param");
+      const validatedData = c.req.valid("json");
+      const db = getDbConnection(c.env.DATABASE_URL);
+      const categoryUseCase = new CategoryUseCase(db);
+      const category = await categoryUseCase.updateCategory(
+        categoryId,
+        validatedData.name
+      );
+      return c.json(category);
+    } catch (error) {
+      if (error instanceof CategoryNotFoundError) {
+        return c.json({ error: Messages.MSG_ERR_003(Entity.CATEGORY) }, 404);
+      }
+      return HandleError(c, error, "カテゴリー編集エラー");
     }
-    const isAdmin = auth.userId === c.env.ADMIN_USER_ID;
-    if (!isAdmin) {
-      return c.json({ error: Messages.MSG_ERR_002 }, 401);
-    }
-
-    // パスパラメータを取得
-    const { category_id: categoryId } = c.req.valid("param");
-
-    // リクエストパラメータを取得
-    const validatedData = c.req.valid("json");
-
-    // データベース接続
-    const db = getDbConnection(c.env.DATABASE_URL);
-    const categoryLogic = new CategoryLogic(db);
-
-    // カテゴリーの存在チェック
-    const existsCategory = await categoryLogic.checkCategoryExists(categoryId);
-    if (!existsCategory) {
-      return c.json({ error: Messages.MSG_ERR_003(Entity.CATEGORY) }, 404);
-    }
-
-    // データベースへの更新
-    const category = await categoryLogic.updateCategory(
-      categoryId,
-      validatedData
-    );
-
-    return c.json(category);
   }
 );
 
