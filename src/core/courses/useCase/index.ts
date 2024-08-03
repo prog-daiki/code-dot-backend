@@ -13,6 +13,24 @@ export class CourseUseCase {
   constructor(private db: PostgresJsDatabase<typeof schema>) {}
 
   /**
+   * 講座の詳細を更新する
+   * @param courseId 講座ID
+   * @param description 詳細
+   * @returns 講座
+   */
+  async updateCourseDescription(courseId: string, description: string) {
+    const courseRepository = new CourseRepository(this.db);
+    const existsCourse = await courseRepository.checkCourseExists(courseId);
+    if (!existsCourse) {
+      throw new CourseNotFoundError();
+    }
+    const course = await courseRepository.updateCourse(courseId, {
+      description,
+    });
+    return course;
+  }
+
+  /**
    * 講座のサムネイルを更新する
    * @param courseId 講座ID
    * @param imageUrl サムネイルURL
