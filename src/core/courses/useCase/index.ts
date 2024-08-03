@@ -3,7 +3,7 @@ import * as schema from "../../../../db/schema";
 import { CourseRepository } from "../repository";
 import { Context } from "hono";
 import { CourseNotFoundError } from "../../../error/CourseNotFoundError";
-import { CategoryLogic } from "../../categories/logic";
+import { CategoryLogic } from "../../categories/repository";
 import { CategoryNotFoundError } from "../../../error/CategoryNotFoundError";
 
 /**

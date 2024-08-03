@@ -4,9 +4,9 @@ import { asc, eq } from "drizzle-orm";
 import { category } from "../../../../db/schema";
 import { createId } from "@paralleldrive/cuid2";
 /**
- * カテゴリーのロジックを管理するクラス
+ * カテゴリーのリポジトリを管理するクラス
  */
-export class CategoryLogic {
+export class CategoryRepository {
   constructor(private db: PostgresJsDatabase<typeof schema>) {}
 
   /**

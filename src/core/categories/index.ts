@@ -2,32 +2,29 @@ import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
 import { insertCategorySchema } from "../../../db/schema";
 import { getAuth } from "@hono/clerk-auth";
-import { Entity, Length, Messages, Property } from "../../sharedInfo/message";
+import { Entity, Messages } from "../../sharedInfo/message";
 import { Env } from "../..";
 import { getDbConnection } from "../../../db/drizzle";
-import { CategoryLogic } from "./logic";
+import { CategoryLogic } from "./repository";
 import { z } from "zod";
+import { validateAuth } from "../../auth/validateAuth";
+import { CategoryUseCase } from "./useCase";
+import { HandleError } from "../../error/HandleError";
 
 const Category = new Hono<{ Bindings: Env }>();
 
 /**
  * カテゴリー一覧取得API
  */
-Category.get("/", async (c) => {
-  // 認証チェック
-  const auth = getAuth(c);
-  if (!auth?.userId) {
-    return c.json({ error: Messages.MSG_ERR_001 }, 401);
+Category.get("/", validateAuth, async (c) => {
+  try {
+    const db = getDbConnection(c.env.DATABASE_URL);
+    const categoryUseCase = new CategoryUseCase(db);
+    const categories = await categoryUseCase.getCategories();
+    return c.json(categories);
+  } catch (error) {
+    return HandleError(c, error, "カテゴリー一覧取得エラー");
   }
-
-  // データベース接続
-  const db = getDbConnection(c.env.DATABASE_URL);
-  const categoryLogic = new CategoryLogic(db);
-
-  // データベースから取得
-  const result = await categoryLogic.getCategories();
-
-  return c.json(result);
 });
 
 /**
