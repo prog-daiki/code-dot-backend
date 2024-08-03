@@ -99,7 +99,7 @@ export class ChapterUseCase {
    * @param courseId
    * @returns
    */
-  async updateChapterTitle(chapterId: string, title: string, courseId: string) {
+  async updateChapterTitle(title: string, courseId: string, chapterId: string) {
     const chapterRepository = new ChapterRepository(this.db);
     const courseRepository = new CourseRepository(this.db);
     const existsCourse = await courseRepository.checkCourseExists(courseId);
@@ -124,9 +124,9 @@ export class ChapterUseCase {
    * @returns
    */
   async updateChapterDescription(
-    chapterId: string,
     description: string,
-    courseId: string
+    courseId: string,
+    chapterId: string
   ) {
     const chapterRepository = new ChapterRepository(this.db);
     const courseRepository = new CourseRepository(this.db);
@@ -140,6 +140,34 @@ export class ChapterUseCase {
     }
     const chapter = await chapterRepository.updateChapter(chapterId, {
       description,
+    });
+    return chapter;
+  }
+
+  /**
+   * 講座のチャプターのアクセス権を更新する
+   * @param chapterId
+   * @param freeFlag
+   * @param courseId
+   * @returns
+   */
+  async updateChapterAccess(
+    freeFlag: boolean,
+    courseId: string,
+    chapterId: string
+  ) {
+    const chapterRepository = new ChapterRepository(this.db);
+    const courseRepository = new CourseRepository(this.db);
+    const existsCourse = await courseRepository.checkCourseExists(courseId);
+    if (!existsCourse) {
+      throw new CourseNotFoundError();
+    }
+    const existsChapter = await chapterRepository.checkChapterExists(chapterId);
+    if (!existsChapter) {
+      throw new ChapterNotFoundError();
+    }
+    const chapter = await chapterRepository.updateChapter(chapterId, {
+      freeFlag,
     });
     return chapter;
   }
