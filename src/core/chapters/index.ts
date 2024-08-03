@@ -105,56 +105,28 @@ Chapter.post(
  */
 Chapter.put(
   "/reorder",
-  zValidator(
-    "param",
-    z.object({
-      course_id: z.string(),
-    })
-  ),
+  validateAdmin,
+  zValidator("param", z.object({ course_id: z.string() })),
   zValidator(
     "json",
     z.object({
-      list: z.array(
-        z.object({
-          id: z.string(),
-          position: z.number(),
-        })
-      ),
+      list: z.array(z.object({ id: z.string(), position: z.number() })),
     })
   ),
   async (c) => {
-    // 認証チェック
-    const auth = getAuth(c);
-    if (!auth?.userId) {
-      return c.json({ error: Messages.MSG_ERR_001 }, 401);
+    try {
+      const { list } = c.req.valid("json");
+      const { course_id: courseId } = c.req.valid("param");
+      const db = getDbConnection(c.env.DATABASE_URL);
+      const chapterUseCase = new ChapterUseCase(db);
+      await chapterUseCase.reorderChapters(courseId, list);
+      return c.json({ status: 200 });
+    } catch (error) {
+      if (error instanceof CourseNotFoundError) {
+        return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
+      }
+      return HandleError(c, error, "チャプター並び替えエラー");
     }
-    const isAdmin = auth.userId === c.env.ADMIN_USER_ID;
-    if (!isAdmin) {
-      return c.json({ error: Messages.MSG_ERR_002 }, 401);
-    }
-
-    const { list } = c.req.valid("json");
-    const { course_id: courseId } = c.req.valid("param");
-
-    // データベース接続
-    const db = getDbConnection(c.env.DATABASE_URL);
-    const chapterLogic = new ChapterLogic(db);
-    const courseLogic = new CourseLogic(db);
-
-    // 講座の存在チェック
-    const existsCourse = await courseLogic.checkCourseExists(courseId);
-    if (!existsCourse) {
-      return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
-    }
-
-    // データベースへの更新
-    await Promise.all(
-      list.map(({ id, position }) =>
-        chapterLogic.updateChapter(id, { position })
-      )
-    );
-
-    return c.json({ status: 200 });
   }
 );
 

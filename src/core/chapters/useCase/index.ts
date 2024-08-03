@@ -67,4 +67,28 @@ export class ChapterUseCase {
     );
     return chapter;
   }
+
+  /**
+   * 講座のチャプターを並び替える
+   * @param courseId
+   * @param list
+   */
+  async reorderChapters(
+    courseId: string,
+    list: { id: string; position: number }[]
+  ) {
+    const chapterRepository = new ChapterRepository(this.db);
+    const courseRepository = new CourseRepository(this.db);
+    const existsCourse = await courseRepository.checkCourseExists(courseId);
+    if (!existsCourse) {
+      throw new CourseNotFoundError();
+    }
+    await Promise.all(
+      list.map(async (chapter) => {
+        await chapterRepository.updateChapter(chapter.id, {
+          position: chapter.position,
+        });
+      })
+    );
+  }
 }
