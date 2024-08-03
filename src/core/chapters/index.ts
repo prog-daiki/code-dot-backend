@@ -6,10 +6,14 @@ import { getAuth } from "@hono/clerk-auth";
 import { Entity, Messages } from "../../sharedInfo/message";
 import { getDbConnection } from "../../../db/drizzle";
 import { z } from "zod";
-import { ChapterLogic } from "./logic";
+import { ChapterLogic } from "./repository";
 import { CourseLogic } from "../courses/repository";
 import Mux from "@mux/mux-node";
 import { MuxDataLogic } from "../muxData/logic";
+import { validateAuth } from "../../auth/validateAuth";
+import { ChapterUseCase } from "./useCase";
+import { HandleError } from "../../error/HandleError";
+import { CourseNotFoundError } from "../../error/CourseNotFoundError";
 
 const Chapter = new Hono<{ Bindings: Env }>();
 
@@ -18,34 +22,21 @@ const Chapter = new Hono<{ Bindings: Env }>();
  */
 Chapter.get(
   "/",
-  zValidator(
-    "param",
-    z.object({
-      course_id: z.string(),
-    })
-  ),
+  validateAuth,
+  zValidator("param", z.object({ course_id: z.string() })),
   async (c) => {
-    // 認証チェック
-    const auth = getAuth(c);
-    if (!auth?.userId) {
-      return c.json({ error: Messages.MSG_ERR_001 }, 401);
+    try {
+      const { course_id: courseId } = c.req.valid("param");
+      const db = getDbConnection(c.env.DATABASE_URL);
+      const chapterUseCase = new ChapterUseCase(db);
+      const chapters = await chapterUseCase.getChapters(courseId);
+      return c.json(chapters);
+    } catch (error) {
+      if (error instanceof CourseNotFoundError) {
+        return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
+      }
+      return HandleError(c, error, "講座一覧取得エラー");
     }
-
-    // データベース接続
-    const db = getDbConnection(c.env.DATABASE_URL);
-    const courseLogic = new CourseLogic(db);
-    const chapterLogic = new ChapterLogic(db);
-
-    // 講座の存在チェック
-    const { course_id: courseId } = c.req.valid("param");
-    const existsCourse = await courseLogic.checkCourseExists(courseId);
-    if (!existsCourse) {
-      return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
-    }
-
-    const chapters = await chapterLogic.getChapters(courseId);
-
-    return c.json(chapters);
   }
 );
 
