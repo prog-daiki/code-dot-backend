@@ -14,6 +14,7 @@ import { validateAuth } from "../../auth/validateAuth";
 import { ChapterUseCase } from "./useCase";
 import { HandleError } from "../../error/HandleError";
 import { CourseNotFoundError } from "../../error/CourseNotFoundError";
+import { ChapterNotFoundError } from "../../error/ChapterNotFoundError";
 
 const Chapter = new Hono<{ Bindings: Env }>();
 
@@ -35,7 +36,7 @@ Chapter.get(
       if (error instanceof CourseNotFoundError) {
         return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
       }
-      return HandleError(c, error, "講座一覧取得エラー");
+      return HandleError(c, error, "チャプター一覧取得エラー");
     }
   }
 );
@@ -45,44 +46,28 @@ Chapter.get(
  */
 Chapter.get(
   "/:chapter_id",
+  validateAuth,
   zValidator(
     "param",
-    z.object({
-      chapter_id: z.string(),
-      course_id: z.string(),
-    })
+    z.object({ chapter_id: z.string(), course_id: z.string() })
   ),
   async (c) => {
-    // 認証チェック
-    const auth = getAuth(c);
-    if (!auth?.userId) {
-      return c.json({ error: Messages.MSG_ERR_001 }, 401);
+    try {
+      const { course_id: courseId, chapter_id: chapterId } =
+        c.req.valid("param");
+      const db = getDbConnection(c.env.DATABASE_URL);
+      const chapterUseCase = new ChapterUseCase(db);
+      const chapter = await chapterUseCase.getChapter(courseId, chapterId);
+      return c.json(chapter);
+    } catch (error) {
+      if (error instanceof CourseNotFoundError) {
+        return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
+      }
+      if (error instanceof ChapterNotFoundError) {
+        return c.json({ error: Messages.MSG_ERR_003(Entity.CHAPTER) }, 404);
+      }
+      return HandleError(c, error, "チャプター取得エラー");
     }
-
-    // パスパラメータを取得
-    const { course_id: courseId, chapter_id: chapterId } = c.req.valid("param");
-
-    // データベース接続
-    const db = getDbConnection(c.env.DATABASE_URL);
-    const courseLogic = new CourseLogic(db);
-    const chapterLogic = new ChapterLogic(db);
-
-    // 講座の存在チェック
-    const existsCourse = await courseLogic.checkCourseExists(courseId);
-    if (!existsCourse) {
-      return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
-    }
-
-    // チャプターの存在チェック
-    const existsChapter = await chapterLogic.checkChapterExists(chapterId);
-    if (!existsChapter) {
-      return c.json({ error: Messages.MSG_ERR_003(Entity.CHAPTER) }, 404);
-    }
-
-    // DBから取得
-    const chapter = await chapterLogic.getChapter(chapterId);
-
-    return c.json(chapter);
   }
 );
 
