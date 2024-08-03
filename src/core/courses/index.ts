@@ -88,37 +88,18 @@ Course.get(
  */
 Course.post(
   "/",
-  zValidator(
-    "json",
-    insertCourseSchema.pick({
-      title: true,
-    })
-  ),
+  validateAdmin,
+  zValidator("json", insertCourseSchema.pick({ title: true })),
   async (c) => {
     try {
-      // 認証チェック
       const auth = getAuth(c);
-      if (!auth?.userId) {
-        return c.json({ error: Messages.MSG_ERR_001 }, 401);
-      }
-      const isAdmin = auth.userId === c.env.ADMIN_USER_ID;
-      if (!isAdmin) {
-        return c.json({ error: Messages.MSG_ERR_002 }, 401);
-      }
-
-      // バリデーションチェック
       const validatedData = c.req.valid("json");
-
-      // データベース接続
       const db = getDbConnection(c.env.DATABASE_URL);
-      const courseLogic = new CourseLogic(db);
-
-      // データベースへの登録
-      const course = await courseLogic.registerCourse(
-        validatedData,
-        auth.userId
+      const courseUseCase = new CourseUseCase(db);
+      const course = await courseUseCase.registerCourse(
+        validatedData.title,
+        auth!.userId!
       );
-
       return c.json(course);
     } catch (error) {
       console.error("講座登録エラー:", error);
