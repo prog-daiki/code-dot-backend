@@ -13,6 +13,22 @@ export class CourseUseCase {
   constructor(private db: PostgresJsDatabase<typeof schema>) {}
 
   /**
+   * 講座のサムネイルを更新する
+   * @param courseId 講座ID
+   * @param imageUrl サムネイルURL
+   * @returns 講座
+   */
+  async updateCourseThumbnail(courseId: string, imageUrl: string) {
+    const courseRepository = new CourseRepository(this.db);
+    const existsCourse = await courseRepository.checkCourseExists(courseId);
+    if (!existsCourse) {
+      throw new CourseNotFoundError();
+    }
+    const course = await courseRepository.updateCourse(courseId, { imageUrl });
+    return course;
+  }
+
+  /**
    * 講座の価格を更新する
    * @param courseId 講座ID
    * @param price 価格
@@ -20,12 +36,10 @@ export class CourseUseCase {
    */
   async updateCoursePrice(courseId: string, price: number) {
     const courseRepository = new CourseRepository(this.db);
-    // 講座の存在チェック
     const existsCourse = await courseRepository.checkCourseExists(courseId);
     if (!existsCourse) {
       throw new CourseNotFoundError();
     }
-    // データベースへの更新
     const course = await courseRepository.updateCourse(courseId, { price });
     return course;
   }
@@ -39,17 +53,14 @@ export class CourseUseCase {
   async updateCourseCategory(courseId: string, categoryId: string) {
     const courseRepository = new CourseRepository(this.db);
     const categoryLogic = new CategoryLogic(this.db);
-    // 講座の存在チェック
     const existsCourse = await courseRepository.checkCourseExists(courseId);
     if (!existsCourse) {
       throw new CourseNotFoundError();
     }
-    // カテゴリーの存在チェック
     const existsCategory = await categoryLogic.checkCategoryExists(categoryId);
     if (!existsCategory) {
       throw new CategoryNotFoundError();
     }
-    // データベースへの更新
     const course = await courseRepository.updateCourse(courseId, {
       categoryId,
     });
@@ -64,12 +75,10 @@ export class CourseUseCase {
    */
   async softDeleteCourse(courseId: string, c: Context) {
     const courseRepository = new CourseRepository(this.db);
-    // 講座の存在チェック
     const existsCourse = await courseRepository.checkCourseExists(courseId);
     if (!existsCourse) {
       throw new CourseNotFoundError();
     }
-    // データベースへの更新
     const course = await courseRepository.updateCourse(courseId, {
       deleteFlag: true,
       publishFlag: false,
@@ -85,12 +94,10 @@ export class CourseUseCase {
    */
   async unpublishCourse(courseId: string, c: Context) {
     const courseRepository = new CourseRepository(this.db);
-    // 講座の存在チェック
     const existsCourse = await courseRepository.checkCourseExists(courseId);
     if (!existsCourse) {
       throw new CourseNotFoundError();
     }
-    // データベースへの更新
     const course = await courseRepository.updateCourse(courseId, {
       publishFlag: false,
     });
