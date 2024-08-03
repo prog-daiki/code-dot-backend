@@ -3,7 +3,7 @@ import { chapter, muxData } from "../../../../db/schema";
 import * as schema from "../../../../db/schema";
 import { getJstDate } from "../../../sharedInfo/date";
 import { createId } from "@paralleldrive/cuid2";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 
 export class ChapterRepository {
   constructor(private db: PostgresJsDatabase<typeof schema>) {}
@@ -61,6 +61,20 @@ export class ChapterRepository {
   }
 
   /**
+   * 講座に紐づくチャプター(公開済み)を一覧取得する
+   * @param courseId
+   * @returns
+   */
+  async getPublishChapters(courseId: string) {
+    const chapters = await this.db
+      .select()
+      .from(chapter)
+      .where(and(eq(chapter.courseId, courseId), eq(chapter.publishFlag, true)))
+      .orderBy(asc(chapter.position));
+    return chapters;
+  }
+
+  /**
    * チャプター取得する
    * @param chapterId
    * @returns
@@ -89,6 +103,18 @@ export class ChapterRepository {
       .update(chapter)
       .set({ ...updateData, updateDate: currentJsDate })
       .where(eq(chapter.id, id))
+      .returning();
+    return data;
+  }
+
+  /**
+   * チャプターを削除する
+   * @param chapterId
+   */
+  async deleteChapter(chapterId: string) {
+    const [data] = await this.db
+      .delete(chapter)
+      .where(eq(chapter.id, chapterId))
       .returning();
     return data;
   }

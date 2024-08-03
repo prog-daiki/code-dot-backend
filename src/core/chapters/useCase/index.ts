@@ -226,4 +226,44 @@ export class ChapterUseCase {
     });
     return chapter;
   }
+
+  /**
+   * 講座のチャプターを削除する
+   * @param courseId
+   * @param chapterId
+   */
+  async deleteChapter(courseId: string, chapterId: string, c: Context) {
+    const chapterRepository = new ChapterRepository(this.db);
+    const courseRepository = new CourseRepository(this.db);
+    const muxDataRepository = new MuxDataRepository(this.db);
+
+    const existsCourse = await courseRepository.checkCourseExists(courseId);
+    if (!existsCourse) {
+      throw new CourseNotFoundError();
+    }
+    const existsChapter = await chapterRepository.checkChapterExists(chapterId);
+    if (!existsChapter) {
+      throw new ChapterNotFoundError();
+    }
+
+    const { video } = new Mux({
+      tokenId: c.env.MUX_TOKEN_ID!,
+      tokenSecret: c.env.MUX_TOKEN_SECRET!,
+    });
+    const existsMuxData = await muxDataRepository.checkMuxDataExists(chapterId);
+    if (existsMuxData) {
+      await video.assets.delete(existsMuxData.assetId);
+      await muxDataRepository.deleteMuxData(chapterId);
+    }
+    const chapter = await chapterRepository.deleteChapter(chapterId);
+
+    const chapters = await chapterRepository.getPublishChapters(courseId);
+    if (chapters.length === 0) {
+      await courseRepository.updateCourse(courseId, {
+        publishFlag: false,
+      });
+    }
+
+    return chapter;
+  }
 }

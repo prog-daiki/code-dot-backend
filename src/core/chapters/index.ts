@@ -270,4 +270,38 @@ Chapter.put(
   }
 );
 
+/**
+ * チャプター削除API
+ */
+Chapter.delete(
+  "/:chapter_id",
+  validateAdmin,
+  zValidator(
+    "param",
+    z.object({ chapter_id: z.string(), course_id: z.string() })
+  ),
+  async (c) => {
+    try {
+      const { course_id: courseId, chapter_id: chapterId } =
+        c.req.valid("param");
+      const db = getDbConnection(c.env.DATABASE_URL);
+      const chapterUseCase = new ChapterUseCase(db);
+      const chapter = await chapterUseCase.deleteChapter(
+        courseId,
+        chapterId,
+        c
+      );
+      return c.json(chapter);
+    } catch (error) {
+      if (error instanceof CourseNotFoundError) {
+        return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
+      }
+      if (error instanceof ChapterNotFoundError) {
+        return c.json({ error: Messages.MSG_ERR_003(Entity.CHAPTER) }, 404);
+      }
+      return HandleError(c, error, "チャプター削除エラー");
+    }
+  }
+);
+
 export default Chapter;
