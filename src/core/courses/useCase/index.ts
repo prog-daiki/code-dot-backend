@@ -1,6 +1,6 @@
 import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import * as schema from "../../../../db/schema";
-import { CourseLogic } from "../logic";
+import { CourseRepository } from "../repository";
 import { Context } from "hono";
 import { CourseNotFoundError } from "../../../error/CourseNotFoundError";
 import { CategoryLogic } from "../../categories/logic";
@@ -19,14 +19,14 @@ export class CourseUseCase {
    * @returns 講座
    */
   async updateCoursePrice(courseId: string, price: number) {
-    const courseLogic = new CourseLogic(this.db);
+    const courseRepository = new CourseRepository(this.db);
     // 講座の存在チェック
-    const existsCourse = await courseLogic.checkCourseExists(courseId);
+    const existsCourse = await courseRepository.checkCourseExists(courseId);
     if (!existsCourse) {
       throw new CourseNotFoundError();
     }
     // データベースへの更新
-    const course = await courseLogic.updateCourse(courseId, { price });
+    const course = await courseRepository.updateCourse(courseId, { price });
     return course;
   }
 
@@ -37,10 +37,10 @@ export class CourseUseCase {
    * @returns 講座
    */
   async updateCourseCategory(courseId: string, categoryId: string) {
-    const courseLogic = new CourseLogic(this.db);
+    const courseRepository = new CourseRepository(this.db);
     const categoryLogic = new CategoryLogic(this.db);
     // 講座の存在チェック
-    const existsCourse = await courseLogic.checkCourseExists(courseId);
+    const existsCourse = await courseRepository.checkCourseExists(courseId);
     if (!existsCourse) {
       throw new CourseNotFoundError();
     }
@@ -50,7 +50,7 @@ export class CourseUseCase {
       throw new CategoryNotFoundError();
     }
     // データベースへの更新
-    const course = await courseLogic.updateCourse(courseId, {
+    const course = await courseRepository.updateCourse(courseId, {
       categoryId,
     });
     return course;
@@ -63,14 +63,14 @@ export class CourseUseCase {
    * @returns 講座
    */
   async softDeleteCourse(courseId: string, c: Context) {
-    const courseLogic = new CourseLogic(this.db);
+    const courseRepository = new CourseRepository(this.db);
     // 講座の存在チェック
-    const existsCourse = await courseLogic.checkCourseExists(courseId);
+    const existsCourse = await courseRepository.checkCourseExists(courseId);
     if (!existsCourse) {
       throw new CourseNotFoundError();
     }
     // データベースへの更新
-    const course = await courseLogic.updateCourse(courseId, {
+    const course = await courseRepository.updateCourse(courseId, {
       deleteFlag: true,
       publishFlag: false,
     });
@@ -84,14 +84,14 @@ export class CourseUseCase {
    * @returns 講座
    */
   async unpublishCourse(courseId: string, c: Context) {
-    const courseLogic = new CourseLogic(this.db);
+    const courseRepository = new CourseRepository(this.db);
     // 講座の存在チェック
-    const existsCourse = await courseLogic.checkCourseExists(courseId);
+    const existsCourse = await courseRepository.checkCourseExists(courseId);
     if (!existsCourse) {
       throw new CourseNotFoundError();
     }
     // データベースへの更新
-    const course = await courseLogic.updateCourse(courseId, {
+    const course = await courseRepository.updateCourse(courseId, {
       publishFlag: false,
     });
     return course;

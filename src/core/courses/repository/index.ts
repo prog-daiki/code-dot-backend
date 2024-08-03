@@ -6,14 +6,13 @@ import { getJstDate } from "../../../sharedInfo/date";
 import { createId } from "@paralleldrive/cuid2";
 
 /**
- * 講座のロジックを管理するクラス
+ * 講座のリポジトリを管理するクラス
  */
-export class CourseLogic {
+export class CourseRepository {
   constructor(private db: PostgresJsDatabase<typeof schema>) {}
 
   /**
    * 講座の存在チェック
-   * @param db
    * @param courseId
    * @returns
    */
