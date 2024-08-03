@@ -4,7 +4,10 @@ import { muxData } from "../../../../db/schema";
 import { eq } from "drizzle-orm";
 import { createId } from "@paralleldrive/cuid2";
 
-export class MuxDataLogic {
+/**
+ * muxDataのリポジトリ
+ */
+export class MuxDataRepository {
   constructor(private db: PostgresJsDatabase<typeof schema>) {}
 
   /**

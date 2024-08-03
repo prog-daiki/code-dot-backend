@@ -4,6 +4,9 @@ import { ChapterRepository } from "../repository";
 import { CourseRepository } from "../../courses/repository";
 import { CourseNotFoundError } from "../../../error/CourseNotFoundError";
 import { ChapterNotFoundError } from "../../../error/ChapterNotFoundError";
+import { Context } from "hono";
+import Mux from "@mux/mux-node";
+import { MuxDataRepository } from "../../muxData/repository";
 
 /**
  * チャプターのuseCaseを管理するクラス
@@ -168,6 +171,58 @@ export class ChapterUseCase {
     }
     const chapter = await chapterRepository.updateChapter(chapterId, {
       freeFlag,
+    });
+    return chapter;
+  }
+
+  /**
+   * 講座のチャプターの動画を更新する
+   * @param videoUrl
+   * @param courseId
+   * @param chapterId
+   * @param c
+   * @returns
+   */
+  async updateChapterVideo(
+    videoUrl: string,
+    courseId: string,
+    chapterId: string,
+    c: Context
+  ) {
+    const chapterRepository = new ChapterRepository(this.db);
+    const courseRepository = new CourseRepository(this.db);
+    const muxDataRepository = new MuxDataRepository(this.db);
+
+    const existsCourse = await courseRepository.checkCourseExists(courseId);
+    if (!existsCourse) {
+      throw new CourseNotFoundError();
+    }
+    const existsChapter = await chapterRepository.checkChapterExists(chapterId);
+    if (!existsChapter) {
+      throw new ChapterNotFoundError();
+    }
+
+    const { video } = new Mux({
+      tokenId: c.env.MUX_TOKEN_ID!,
+      tokenSecret: c.env.MUX_TOKEN_SECRET!,
+    });
+    const existsMuxData = await muxDataRepository.checkMuxDataExists(chapterId);
+    if (existsMuxData) {
+      await video.assets.delete(existsMuxData.assetId);
+      await muxDataRepository.deleteMuxData(chapterId);
+    }
+    const asset = await video.assets.create({
+      input: videoUrl as any,
+      playback_policy: ["public"],
+      test: false,
+    });
+    await muxDataRepository.registerMuxData(
+      chapterId,
+      asset.id,
+      asset.playback_ids![0].id
+    );
+    const chapter = await chapterRepository.updateChapter(chapterId, {
+      videoUrl,
     });
     return chapter;
   }
