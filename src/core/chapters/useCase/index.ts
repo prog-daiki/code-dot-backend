@@ -263,7 +263,34 @@ export class ChapterUseCase {
         publishFlag: false,
       });
     }
+    return chapter;
+  }
 
+  /**
+   * 講座のチャプターを非公開にする
+   * @param courseId
+   * @param chapterId
+   */
+  async unpublishChapter(courseId: string, chapterId: string) {
+    const chapterRepository = new ChapterRepository(this.db);
+    const courseRepository = new CourseRepository(this.db);
+    const existsCourse = await courseRepository.checkCourseExists(courseId);
+    if (!existsCourse) {
+      throw new CourseNotFoundError();
+    }
+    const existsChapter = await chapterRepository.checkChapterExists(chapterId);
+    if (!existsChapter) {
+      throw new ChapterNotFoundError();
+    }
+    const chapter = await chapterRepository.updateChapter(chapterId, {
+      publishFlag: false,
+    });
+    const chapters = await chapterRepository.getPublishChapters(courseId);
+    if (chapters.length === 0) {
+      await courseRepository.updateCourse(courseId, {
+        publishFlag: false,
+      });
+    }
     return chapter;
   }
 }
