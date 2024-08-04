@@ -11,6 +11,8 @@ import { HandleError } from "../../error/HandleError";
 import { CourseNotFoundError } from "../../error/CourseNotFoundError";
 import { ChapterNotFoundError } from "../../error/ChapterNotFoundError";
 import { validateAdmin } from "../../auth/validateAdmin";
+import { ChapterRequiredFieldsEmptyError } from "../../error/ChapterRequiredFieldsEmptyError";
+import { MuxDataNotFoundError } from "../../error/MuxDataNotFoundError";
 
 const Chapter = new Hono<{ Bindings: Env }>();
 
@@ -333,6 +335,42 @@ Chapter.put(
         return c.json({ error: Messages.MSG_ERR_003(Entity.CHAPTER) }, 404);
       }
       return HandleError(c, error, "チャプター非公開エラー");
+    }
+  }
+);
+
+/**
+ * チャプター公開API
+ */
+Chapter.put(
+  "/:chapter_id/publish",
+  validateAdmin,
+  zValidator(
+    "param",
+    z.object({ chapter_id: z.string(), course_id: z.string() })
+  ),
+  async (c) => {
+    try {
+      const { course_id: courseId, chapter_id: chapterId } =
+        c.req.valid("param");
+      const db = getDbConnection(c.env.DATABASE_URL);
+      const chapterUseCase = new ChapterUseCase(db);
+      const chapter = await chapterUseCase.publishChapter(courseId, chapterId);
+      return c.json(chapter);
+    } catch (error) {
+      if (error instanceof CourseNotFoundError) {
+        return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
+      }
+      if (error instanceof ChapterNotFoundError) {
+        return c.json({ error: Messages.MSG_ERR_003(Entity.CHAPTER) }, 404);
+      }
+      if (error instanceof MuxDataNotFoundError) {
+        return c.json({ error: Messages.MSG_ERR_003(Entity.MUXDATA) }, 404);
+      }
+      if (error instanceof ChapterRequiredFieldsEmptyError) {
+        return c.json({ error: Messages.MSG_ERR_004 }, 400);
+      }
+      return HandleError(c, error, "チャプター公開エラー");
     }
   }
 );

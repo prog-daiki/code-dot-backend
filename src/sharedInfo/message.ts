@@ -2,16 +2,14 @@ export const Messages = {
   MSG_ERR_001: "認証されていません",
   MSG_ERR_002: "管理者ではありません",
   MSG_ERR_003: (entity: Entity) => `存在しない${entity}です`,
-  MSG_ERR_004: (property: Property) => `${property}は必須です`,
-  MSG_ERR_005: (property: Property, length: Length) =>
-    `${property}は${length}以内です`,
-  MSG_ERR_006: (property: Property) => `${property}は1円以上100万円以下です`,
+  MSG_ERR_004: "必須項目が未入力です",
 };
 
 export enum Entity {
   COURSE = "講座",
   CATEGORY = "カテゴリー",
   CHAPTER = "チャプター",
+  MUXDATA = "Muxデータ",
 }
 
 export enum Property {
