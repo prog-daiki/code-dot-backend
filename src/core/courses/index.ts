@@ -292,4 +292,27 @@ Course.put(
   }
 );
 
+/**
+ * 講座物理削除API
+ */
+Course.delete(
+  "/:course_id",
+  validateAdmin,
+  zValidator("param", z.object({ course_id: z.string() })),
+  async (c) => {
+    try {
+      const { course_id: courseId } = c.req.valid("param");
+      const db = getDbConnection(c.env.DATABASE_URL);
+      const courseUseCase = new CourseUseCase(db);
+      const course = await courseUseCase.hardDeleteCourse(courseId, c);
+      return c.json(course);
+    } catch (error) {
+      if (error instanceof CourseNotFoundError) {
+        return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
+      }
+      return HandleError(c, error, "講座物理削除エラー");
+    }
+  }
+);
+
 export default Course;

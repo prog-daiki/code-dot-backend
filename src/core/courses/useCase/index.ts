@@ -8,6 +8,8 @@ import { CategoryNotFoundError } from "../../../error/CategoryNotFoundError";
 import { CategoryRepository } from "../../categories/repository";
 import { ChapterRepository } from "../../chapters/repository";
 import { CourseRequiredFieldsEmptyError } from "../../../error/CourseRequiredFieldsEmptyError";
+import { MuxDataRepository } from "../../muxData/repository";
+import Mux from "@mux/mux-node";
 
 /**
  * 講座のuseCaseを管理するクラス
@@ -213,5 +215,31 @@ export class CourseUseCase {
       publishFlag: true,
     });
     return updatedCourse;
+  }
+
+  /**
+   * 講座を物理削除する
+   * @param courseId 講座ID
+   * @param c コンテキスト
+   */
+  async hardDeleteCourse(courseId: string, c: Context) {
+    const courseRepository = new CourseRepository(this.db);
+    const muxRepository = new MuxDataRepository(this.db);
+    const existsCourse = await courseRepository.checkCourseExists(courseId);
+    if (!existsCourse) {
+      throw new CourseNotFoundError();
+    }
+    const { video } = new Mux({
+      tokenId: c.env.MUX_TOKEN_ID!,
+      tokenSecret: c.env.MUX_TOKEN_SECRET!,
+    });
+    const muxDataList = await muxRepository.getMuxDataByCourseId(courseId);
+    if (muxDataList.length > 0) {
+      for (const muxData of muxDataList) {
+        await video.assets.delete(muxData.muxData.assetId);
+      }
+    }
+    const course = await courseRepository.deleteCourse(courseId);
+    return course;
   }
 }
