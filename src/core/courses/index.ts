@@ -12,6 +12,7 @@ import { CourseNotFoundError } from "../../error/CourseNotFoundError";
 import { HandleError } from "../../error/HandleError";
 import { CategoryNotFoundError } from "../../error/CategoryNotFoundError";
 import { validateAuth } from "../../auth/validateAuth";
+import { CourseRequiredFieldsEmptyError } from "../../error/CourseRequiredFieldsEmptyError";
 
 const Course = new Hono<{ Bindings: Env }>();
 
@@ -261,6 +262,32 @@ Course.put(
         return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
       }
       return HandleError(c, error, "講座非公開エラー");
+    }
+  }
+);
+
+/**
+ * 講座公開API
+ */
+Course.put(
+  "/:course_id/publish",
+  validateAdmin,
+  zValidator("param", z.object({ course_id: z.string() })),
+  async (c) => {
+    try {
+      const { course_id: courseId } = c.req.valid("param");
+      const db = getDbConnection(c.env.DATABASE_URL);
+      const courseUseCase = new CourseUseCase(db);
+      const course = await courseUseCase.publishCourse(courseId);
+      return c.json(course);
+    } catch (error) {
+      if (error instanceof CourseNotFoundError) {
+        return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
+      }
+      if (error instanceof CourseRequiredFieldsEmptyError) {
+        return c.json({ error: Messages.MSG_ERR_004 }, 400);
+      }
+      return HandleError(c, error, "講座公開エラー");
     }
   }
 );

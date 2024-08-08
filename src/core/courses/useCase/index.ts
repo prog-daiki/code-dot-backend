@@ -6,6 +6,8 @@ import { CourseNotFoundError } from "../../../error/CourseNotFoundError";
 
 import { CategoryNotFoundError } from "../../../error/CategoryNotFoundError";
 import { CategoryRepository } from "../../categories/repository";
+import { ChapterRepository } from "../../chapters/repository";
+import { CourseRequiredFieldsEmptyError } from "../../../error/CourseRequiredFieldsEmptyError";
 
 /**
  * 講座のuseCaseを管理するクラス
@@ -176,5 +178,40 @@ export class CourseUseCase {
       publishFlag: false,
     });
     return course;
+  }
+
+  /**
+   * 講座を公開する
+   * @param courseId 講座ID
+   * @returns 講座
+   */
+  async publishCourse(courseId: string) {
+    const courseRepository = new CourseRepository(this.db);
+    const chapterRepository = new ChapterRepository(this.db);
+
+    const existsCourse = await courseRepository.checkCourseExists(courseId);
+    if (!existsCourse) {
+      throw new CourseNotFoundError();
+    }
+
+    const course = await courseRepository.getCourse(courseId);
+    const publishChapters = await chapterRepository.getPublishChapters(
+      courseId
+    );
+    if (
+      publishChapters.length === 0 ||
+      !course.title ||
+      !course.description ||
+      !course.imageUrl ||
+      !course.categoryId ||
+      course.price === null
+    ) {
+      throw new CourseRequiredFieldsEmptyError();
+    }
+
+    const updatedCourse = await courseRepository.updateCourse(courseId, {
+      publishFlag: true,
+    });
+    return updatedCourse;
   }
 }
