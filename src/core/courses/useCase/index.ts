@@ -15,15 +15,18 @@ import Mux from "@mux/mux-node";
  * 講座のuseCaseを管理するクラス
  */
 export class CourseUseCase {
-  constructor(private db: PostgresJsDatabase<typeof schema>) {}
+  private courseRepository: CourseRepository;
+
+  constructor(private db: PostgresJsDatabase<typeof schema>) {
+    this.courseRepository = new CourseRepository(this.db);
+  }
 
   /**
    * 講座一覧を取得する
    * @returns 講座一覧
    */
   async getCourses() {
-    const courseRepository = new CourseRepository(this.db);
-    const courses = await courseRepository.getCourses();
+    const courses = await this.courseRepository.getCourses();
     return courses;
   }
 

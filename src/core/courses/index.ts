@@ -20,9 +20,9 @@ const Course = new Hono<{ Bindings: Env }>();
  * 講座一覧取得API
  */
 Course.get("/", validateAuth, async (c) => {
+  const db = getDbConnection(c.env.DATABASE_URL);
+  const courseUseCase = new CourseUseCase(db);
   try {
-    const db = getDbConnection(c.env.DATABASE_URL);
-    const courseUseCase = new CourseUseCase(db);
     const courses = await courseUseCase.getCourses();
     return c.json(courses);
   } catch (error) {
