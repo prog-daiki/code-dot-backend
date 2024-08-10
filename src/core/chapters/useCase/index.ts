@@ -45,7 +45,7 @@ export class ChapterUseCase {
     if (!existsCourse) {
       throw new CourseNotFoundError();
     }
-    const existsChapter = await chapterRepository.checkChapterExists(courseId);
+    const existsChapter = await chapterRepository.checkChapterExists(chapterId);
     if (!existsChapter) {
       throw new ChapterNotFoundError();
     }

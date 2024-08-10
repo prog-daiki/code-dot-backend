@@ -47,7 +47,7 @@ Chapter.get(
   validateAuth,
   zValidator(
     "param",
-    z.object({ chapter_id: z.string(), course_id: z.string() })
+    z.object({ course_id: z.string(), chapter_id: z.string() })
   ),
   async (c) => {
     try {

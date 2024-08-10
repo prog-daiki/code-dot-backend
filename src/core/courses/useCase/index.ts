@@ -6,20 +6,27 @@ import { CourseNotFoundError } from "../../../error/CourseNotFoundError";
 
 import { CategoryNotFoundError } from "../../../error/CategoryNotFoundError";
 import { CategoryRepository } from "../../categories/repository";
+import { ChapterRepository } from "../../chapters/repository";
+import { CourseRequiredFieldsEmptyError } from "../../../error/CourseRequiredFieldsEmptyError";
+import { MuxDataRepository } from "../../muxData/repository";
+import Mux from "@mux/mux-node";
 
 /**
  * 講座のuseCaseを管理するクラス
  */
 export class CourseUseCase {
-  constructor(private db: PostgresJsDatabase<typeof schema>) {}
+  private courseRepository: CourseRepository;
+
+  constructor(private db: PostgresJsDatabase<typeof schema>) {
+    this.courseRepository = new CourseRepository(this.db);
+  }
 
   /**
    * 講座一覧を取得する
    * @returns 講座一覧
    */
   async getCourses() {
-    const courseRepository = new CourseRepository(this.db);
-    const courses = await courseRepository.getCourses();
+    const courses = await this.courseRepository.getCourses();
     return courses;
   }
 
@@ -29,12 +36,15 @@ export class CourseUseCase {
    * @returns 講座
    */
   async getCourse(courseId: string) {
-    const courseRepository = new CourseRepository(this.db);
-    const existsCourse = await courseRepository.checkCourseExists(courseId);
+    // 講座の存在チェック
+    const existsCourse = await this.courseRepository.checkCourseExists(
+      courseId
+    );
     if (!existsCourse) {
       throw new CourseNotFoundError();
     }
-    const course = await courseRepository.getCourse(courseId);
+
+    const course = await this.courseRepository.getCourse(courseId);
     return course;
   }
 
@@ -45,8 +55,10 @@ export class CourseUseCase {
    * @returns 講座
    */
   async registerCourse(title: string, userId: string) {
-    const courseRepository = new CourseRepository(this.db);
-    const course = await courseRepository.registerCourse({ title }, userId);
+    const course = await this.courseRepository.registerCourse(
+      { title },
+      userId
+    );
     return course;
   }
 
@@ -175,6 +187,67 @@ export class CourseUseCase {
     const course = await courseRepository.updateCourse(courseId, {
       publishFlag: false,
     });
+    return course;
+  }
+
+  /**
+   * 講座を公開する
+   * @param courseId 講座ID
+   * @returns 講座
+   */
+  async publishCourse(courseId: string) {
+    const courseRepository = new CourseRepository(this.db);
+    const chapterRepository = new ChapterRepository(this.db);
+
+    const existsCourse = await courseRepository.checkCourseExists(courseId);
+    if (!existsCourse) {
+      throw new CourseNotFoundError();
+    }
+
+    const course = await courseRepository.getCourse(courseId);
+    const publishChapters = await chapterRepository.getPublishChapters(
+      courseId
+    );
+    if (
+      publishChapters.length === 0 ||
+      !course.title ||
+      !course.description ||
+      !course.imageUrl ||
+      !course.categoryId ||
+      course.price === null
+    ) {
+      throw new CourseRequiredFieldsEmptyError();
+    }
+
+    const updatedCourse = await courseRepository.updateCourse(courseId, {
+      publishFlag: true,
+    });
+    return updatedCourse;
+  }
+
+  /**
+   * 講座を物理削除する
+   * @param courseId 講座ID
+   * @param c コンテキスト
+   */
+  async hardDeleteCourse(courseId: string, c: Context) {
+    const courseRepository = new CourseRepository(this.db);
+    const muxRepository = new MuxDataRepository(this.db);
+    const existsCourse = await courseRepository.checkCourseExists(courseId);
+    if (!existsCourse) {
+      throw new CourseNotFoundError();
+    }
+    const { video } = new Mux({
+      tokenId: c.env.MUX_TOKEN_ID!,
+      tokenSecret: c.env.MUX_TOKEN_SECRET!,
+    });
+    const muxDataList = await muxRepository.getMuxDataByCourseId(courseId);
+    if (muxDataList.length > 0) {
+      for (const muxData of muxDataList) {
+        await video.assets.delete(muxData.muxData.assetId);
+      }
+    }
+    const course = await courseRepository.deleteCourse(courseId);
     return course;
   }
 }

@@ -12,6 +12,7 @@ import { CourseNotFoundError } from "../../error/CourseNotFoundError";
 import { HandleError } from "../../error/HandleError";
 import { CategoryNotFoundError } from "../../error/CategoryNotFoundError";
 import { validateAuth } from "../../auth/validateAuth";
+import { CourseRequiredFieldsEmptyError } from "../../error/CourseRequiredFieldsEmptyError";
 
 const Course = new Hono<{ Bindings: Env }>();
 
@@ -19,9 +20,9 @@ const Course = new Hono<{ Bindings: Env }>();
  * 講座一覧取得API
  */
 Course.get("/", validateAuth, async (c) => {
+  const db = getDbConnection(c.env.DATABASE_URL);
+  const courseUseCase = new CourseUseCase(db);
   try {
-    const db = getDbConnection(c.env.DATABASE_URL);
-    const courseUseCase = new CourseUseCase(db);
     const courses = await courseUseCase.getCourses();
     return c.json(courses);
   } catch (error) {
@@ -37,10 +38,10 @@ Course.get(
   validateAuth,
   zValidator("param", z.object({ course_id: z.string() })),
   async (c) => {
+    const { course_id: courseId } = c.req.valid("param");
+    const db = getDbConnection(c.env.DATABASE_URL);
+    const courseUseCase = new CourseUseCase(db);
     try {
-      const { course_id: courseId } = c.req.valid("param");
-      const db = getDbConnection(c.env.DATABASE_URL);
-      const courseUseCase = new CourseUseCase(db);
       const course = await courseUseCase.getCourse(courseId);
       return c.json(course);
     } catch (error) {
@@ -60,11 +61,11 @@ Course.post(
   validateAdmin,
   zValidator("json", insertCourseSchema.pick({ title: true })),
   async (c) => {
+    const auth = getAuth(c);
+    const validatedData = c.req.valid("json");
+    const db = getDbConnection(c.env.DATABASE_URL);
+    const courseUseCase = new CourseUseCase(db);
     try {
-      const auth = getAuth(c);
-      const validatedData = c.req.valid("json");
-      const db = getDbConnection(c.env.DATABASE_URL);
-      const courseUseCase = new CourseUseCase(db);
       const course = await courseUseCase.registerCourse(
         validatedData.title,
         auth!.userId!
@@ -261,6 +262,55 @@ Course.put(
         return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
       }
       return HandleError(c, error, "講座非公開エラー");
+    }
+  }
+);
+
+/**
+ * 講座公開API
+ */
+Course.put(
+  "/:course_id/publish",
+  validateAdmin,
+  zValidator("param", z.object({ course_id: z.string() })),
+  async (c) => {
+    try {
+      const { course_id: courseId } = c.req.valid("param");
+      const db = getDbConnection(c.env.DATABASE_URL);
+      const courseUseCase = new CourseUseCase(db);
+      const course = await courseUseCase.publishCourse(courseId);
+      return c.json(course);
+    } catch (error) {
+      if (error instanceof CourseNotFoundError) {
+        return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
+      }
+      if (error instanceof CourseRequiredFieldsEmptyError) {
+        return c.json({ error: Messages.MSG_ERR_004 }, 400);
+      }
+      return HandleError(c, error, "講座公開エラー");
+    }
+  }
+);
+
+/**
+ * 講座物理削除API
+ */
+Course.delete(
+  "/:course_id",
+  validateAdmin,
+  zValidator("param", z.object({ course_id: z.string() })),
+  async (c) => {
+    try {
+      const { course_id: courseId } = c.req.valid("param");
+      const db = getDbConnection(c.env.DATABASE_URL);
+      const courseUseCase = new CourseUseCase(db);
+      const course = await courseUseCase.hardDeleteCourse(courseId, c);
+      return c.json(course);
+    } catch (error) {
+      if (error instanceof CourseNotFoundError) {
+        return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
+      }
+      return HandleError(c, error, "講座物理削除エラー");
     }
   }
 );
