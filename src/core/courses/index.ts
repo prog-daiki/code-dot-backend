@@ -86,11 +86,11 @@ Course.put(
   zValidator("json", insertCourseSchema.pick({ title: true })),
   zValidator("param", z.object({ course_id: z.string() })),
   async (c) => {
+    const validatedData = c.req.valid("json");
+    const { course_id: courseId } = c.req.valid("param");
+    const db = getDbConnection(c.env.DATABASE_URL);
+    const courseUseCase = new CourseUseCase(db);
     try {
-      const validatedData = c.req.valid("json");
-      const { course_id: courseId } = c.req.valid("param");
-      const db = getDbConnection(c.env.DATABASE_URL);
-      const courseUseCase = new CourseUseCase(db);
       const course = await courseUseCase.updateCourseTitle(
         courseId,
         validatedData.title

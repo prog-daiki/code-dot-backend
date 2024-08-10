@@ -94,7 +94,7 @@ export class CourseRepository {
       .where(eq(course.id, courseId))
       .returning();
 
-    return { data };
+    return data;
   }
 
   /**
