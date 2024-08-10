@@ -61,11 +61,11 @@ Course.post(
   validateAdmin,
   zValidator("json", insertCourseSchema.pick({ title: true })),
   async (c) => {
+    const auth = getAuth(c);
+    const validatedData = c.req.valid("json");
+    const db = getDbConnection(c.env.DATABASE_URL);
+    const courseUseCase = new CourseUseCase(db);
     try {
-      const auth = getAuth(c);
-      const validatedData = c.req.valid("json");
-      const db = getDbConnection(c.env.DATABASE_URL);
-      const courseUseCase = new CourseUseCase(db);
       const course = await courseUseCase.registerCourse(
         validatedData.title,
         auth!.userId!

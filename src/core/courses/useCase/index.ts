@@ -55,8 +55,10 @@ export class CourseUseCase {
    * @returns 講座
    */
   async registerCourse(title: string, userId: string) {
-    const courseRepository = new CourseRepository(this.db);
-    const course = await courseRepository.registerCourse({ title }, userId);
+    const course = await this.courseRepository.registerCourse(
+      { title },
+      userId
+    );
     return course;
   }
 
