@@ -1,7 +1,7 @@
 import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import * as schema from "../../../../db/schema";
-import { course } from "../../../../db/schema";
-import { desc, eq } from "drizzle-orm";
+import { course, chapter, category } from "../../../../db/schema";
+import { desc, eq, and, sql, ilike } from "drizzle-orm";
 import { getJstDate } from "../../../sharedInfo/date";
 import { createId } from "@paralleldrive/cuid2";
 
@@ -45,6 +45,39 @@ export class CourseRepository {
     const data = await this.db
       .select()
       .from(course)
+      .orderBy(desc(course.updateDate));
+    return data;
+  }
+
+  /**
+   * 公開講座を一覧取得する
+   * @param title
+   * @param categoryId
+   * @returns
+   */
+  async getPublishCourses(title?: string, categoryId?: string) {
+    const data = await this.db
+      .select({
+        course,
+        category,
+        chapters: sql<
+          (typeof chapter)[]
+        >`coalesce(json_agg(${chapter}) filter (where ${chapter.id} is not null), '[]')`.as(
+          "chapters"
+        ),
+      })
+      .from(course)
+      .leftJoin(chapter, eq(course.id, chapter.courseId))
+      .leftJoin(category, eq(course.categoryId, category.id))
+      .where(
+        and(
+          eq(course.publishFlag, true),
+          eq(chapter.publishFlag, true),
+          title ? ilike(course.title, `%${title}%`) : undefined,
+          categoryId ? eq(course.categoryId, categoryId) : undefined
+        )
+      )
+      .groupBy(course.id, category.id)
       .orderBy(desc(course.updateDate));
     return data;
   }
@@ -94,7 +127,7 @@ export class CourseRepository {
       .where(eq(course.id, courseId))
       .returning();
 
-    return { data };
+    return data;
   }
 
   /**

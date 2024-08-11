@@ -31,6 +31,35 @@ Course.get("/", validateAuth, async (c) => {
 });
 
 /**
+ * 公開講座一覧取得API
+ */
+Course.get(
+  "/publish",
+  validateAuth,
+  zValidator(
+    "query",
+    z.object({
+      title: z.string().optional(),
+      categoryId: z.string().optional(),
+    })
+  ),
+  async (c) => {
+    const db = getDbConnection(c.env.DATABASE_URL);
+    const courseUseCase = new CourseUseCase(db);
+    const validatedData = c.req.valid("query");
+    try {
+      const courses = await courseUseCase.getPublishCourses(
+        validatedData.title,
+        validatedData.categoryId
+      );
+      return c.json(courses);
+    } catch (error) {
+      return HandleError(c, error, "公開講座一覧取得エラー");
+    }
+  }
+);
+
+/**
  * 講座取得API
  */
 Course.get(
@@ -86,11 +115,11 @@ Course.put(
   zValidator("json", insertCourseSchema.pick({ title: true })),
   zValidator("param", z.object({ course_id: z.string() })),
   async (c) => {
+    const validatedData = c.req.valid("json");
+    const { course_id: courseId } = c.req.valid("param");
+    const db = getDbConnection(c.env.DATABASE_URL);
+    const courseUseCase = new CourseUseCase(db);
     try {
-      const validatedData = c.req.valid("json");
-      const { course_id: courseId } = c.req.valid("param");
-      const db = getDbConnection(c.env.DATABASE_URL);
-      const courseUseCase = new CourseUseCase(db);
       const course = await courseUseCase.updateCourseTitle(
         courseId,
         validatedData.title
