@@ -31,6 +31,35 @@ Course.get("/", validateAuth, async (c) => {
 });
 
 /**
+ * 公開講座一覧取得API
+ */
+Course.get(
+  "/publish",
+  validateAuth,
+  zValidator(
+    "query",
+    z.object({
+      title: z.string().optional(),
+      categoryId: z.string().optional(),
+    })
+  ),
+  async (c) => {
+    const db = getDbConnection(c.env.DATABASE_URL);
+    const courseUseCase = new CourseUseCase(db);
+    const validatedData = c.req.valid("query");
+    try {
+      const courses = await courseUseCase.getPublishCourses(
+        validatedData.title,
+        validatedData.categoryId
+      );
+      return c.json(courses);
+    } catch (error) {
+      return HandleError(c, error, "公開講座一覧取得エラー");
+    }
+  }
+);
+
+/**
  * 講座取得API
  */
 Course.get(

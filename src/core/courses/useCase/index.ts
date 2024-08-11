@@ -30,6 +30,14 @@ export class CourseUseCase {
     return courses;
   }
 
+  async getPublishCourses(title?: string, categoryId?: string) {
+    const courses = await this.courseRepository.getPublishCourses(
+      title,
+      categoryId
+    );
+    return courses;
+  }
+
   /**
    * 講座を取得する
    * @param courseId 講座ID
