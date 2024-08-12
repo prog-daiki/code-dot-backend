@@ -60,11 +60,11 @@ Course.get(
 );
 
 /**
- * 講座取得API
+ * 講座取得API（管理者）
  */
 Course.get(
   "/:course_id",
-  validateAuth,
+  validateAdmin,
   zValidator("param", z.object({ course_id: z.string() })),
   async (c) => {
     const { course_id: courseId } = c.req.valid("param");
