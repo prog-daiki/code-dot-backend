@@ -31,10 +31,7 @@ export class CourseUseCase {
   }
 
   async getPublishCourses(title?: string, categoryId?: string) {
-    const courses = await this.courseRepository.getPublishCourses(
-      title,
-      categoryId
-    );
+    const courses = await this.courseRepository.getPublishCourses(title, categoryId);
     return courses;
   }
 
@@ -45,13 +42,12 @@ export class CourseUseCase {
    */
   async getCourse(courseId: string) {
     // 講座の存在チェック
-    const existsCourse = await this.courseRepository.checkCourseExists(
-      courseId
-    );
+    const existsCourse = await this.courseRepository.checkCourseExists(courseId);
     if (!existsCourse) {
       throw new CourseNotFoundError();
     }
 
+    // 講座取得
     const course = await this.courseRepository.getCourse(courseId);
     return course;
   }
@@ -63,10 +59,7 @@ export class CourseUseCase {
    * @returns 講座
    */
   async registerCourse(title: string, userId: string) {
-    const course = await this.courseRepository.registerCourse(
-      { title },
-      userId
-    );
+    const course = await this.courseRepository.registerCourse({ title }, userId);
     return course;
   }
 
@@ -78,9 +71,7 @@ export class CourseUseCase {
    */
   async updateCourseTitle(courseId: string, title: string) {
     // 講座の存在チェック
-    const existsCourse = await this.courseRepository.checkCourseExists(
-      courseId
-    );
+    const existsCourse = await this.courseRepository.checkCourseExists(courseId);
     if (!existsCourse) {
       throw new CourseNotFoundError();
     }
@@ -154,9 +145,7 @@ export class CourseUseCase {
     if (!existsCourse) {
       throw new CourseNotFoundError();
     }
-    const existsCategory = await categoryRepository.checkCategoryExists(
-      categoryId
-    );
+    const existsCategory = await categoryRepository.checkCategoryExists(categoryId);
     if (!existsCategory) {
       throw new CategoryNotFoundError();
     }
@@ -218,9 +207,7 @@ export class CourseUseCase {
     }
 
     const course = await courseRepository.getCourse(courseId);
-    const publishChapters = await chapterRepository.getPublishChapters(
-      courseId
-    );
+    const publishChapters = await chapterRepository.getPublishChapters(courseId);
     if (
       publishChapters.length === 0 ||
       !course.title ||
