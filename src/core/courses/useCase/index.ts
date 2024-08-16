@@ -76,9 +76,7 @@ export class CourseUseCase {
       throw new CourseNotFoundError();
     }
 
-    const course = await this.courseRepository.updateCourse(courseId, {
-      title,
-    });
+    const course = await this.courseRepository.updateCourse(courseId, { title });
     return course;
   }
 
@@ -89,14 +87,13 @@ export class CourseUseCase {
    * @returns 講座
    */
   async updateCourseDescription(courseId: string, description: string) {
-    const courseRepository = new CourseRepository(this.db);
-    const existsCourse = await courseRepository.checkCourseExists(courseId);
+    // 講座の存在チェック
+    const existsCourse = await this.courseRepository.checkCourseExists(courseId);
     if (!existsCourse) {
       throw new CourseNotFoundError();
     }
-    const course = await courseRepository.updateCourse(courseId, {
-      description,
-    });
+
+    const course = await this.courseRepository.updateCourse(courseId, { description });
     return course;
   }
 
