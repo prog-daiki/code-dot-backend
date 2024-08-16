@@ -19,7 +19,7 @@ const Course = new Hono<{ Bindings: Env }>();
 /**
  * 講座一覧取得API
  */
-Course.get("/", validateAuth, async (c) => {
+Course.get("/", validateAdmin, async (c) => {
   const db = getDbConnection(c.env.DATABASE_URL);
   const courseUseCase = new CourseUseCase(db);
   try {
@@ -41,7 +41,7 @@ Course.get(
     z.object({
       title: z.string().optional(),
       categoryId: z.string().optional(),
-    })
+    }),
   ),
   async (c) => {
     const db = getDbConnection(c.env.DATABASE_URL);
@@ -50,13 +50,13 @@ Course.get(
     try {
       const courses = await courseUseCase.getPublishCourses(
         validatedData.title,
-        validatedData.categoryId
+        validatedData.categoryId,
       );
       return c.json(courses);
     } catch (error) {
       return HandleError(c, error, "公開講座一覧取得エラー");
     }
-  }
+  },
 );
 
 /**
@@ -79,7 +79,7 @@ Course.get(
       }
       return HandleError(c, error, "講座取得エラー");
     }
-  }
+  },
 );
 
 /**
@@ -95,15 +95,12 @@ Course.post(
     const db = getDbConnection(c.env.DATABASE_URL);
     const courseUseCase = new CourseUseCase(db);
     try {
-      const course = await courseUseCase.registerCourse(
-        validatedData.title,
-        auth!.userId!
-      );
+      const course = await courseUseCase.registerCourse(validatedData.title, auth!.userId!);
       return c.json(course);
     } catch (error) {
       return HandleError(c, error, "講座登録エラー");
     }
-  }
+  },
 );
 
 /**
@@ -120,10 +117,7 @@ Course.put(
     const db = getDbConnection(c.env.DATABASE_URL);
     const courseUseCase = new CourseUseCase(db);
     try {
-      const course = await courseUseCase.updateCourseTitle(
-        courseId,
-        validatedData.title
-      );
+      const course = await courseUseCase.updateCourseTitle(courseId, validatedData.title);
       return c.json(course);
     } catch (error) {
       if (error instanceof CourseNotFoundError) {
@@ -131,7 +125,7 @@ Course.put(
       }
       return HandleError(c, error, "講座タイトル編集エラー");
     }
-  }
+  },
 );
 
 /**
@@ -150,7 +144,7 @@ Course.put(
       const courseUseCase = new CourseUseCase(db);
       const course = await courseUseCase.updateCourseDescription(
         courseId,
-        validatedData.description
+        validatedData.description,
       );
       return c.json(course);
     } catch (error) {
@@ -159,7 +153,7 @@ Course.put(
       }
       return HandleError(c, error, "講座詳細編集エラー");
     }
-  }
+  },
 );
 
 /**
@@ -176,10 +170,7 @@ Course.put(
       const { course_id: courseId } = c.req.valid("param");
       const db = getDbConnection(c.env.DATABASE_URL);
       const courseUseCase = new CourseUseCase(db);
-      const course = await courseUseCase.updateCourseThumbnail(
-        courseId,
-        validatedData.imageUrl
-      );
+      const course = await courseUseCase.updateCourseThumbnail(courseId, validatedData.imageUrl);
       return c.json(course);
     } catch (error) {
       if (error instanceof CourseNotFoundError) {
@@ -187,7 +178,7 @@ Course.put(
       }
       return HandleError(c, error, "講座サムネイル編集エラー");
     }
-  }
+  },
 );
 
 /**
@@ -204,10 +195,7 @@ Course.put(
       const { course_id: courseId } = c.req.valid("param");
       const db = getDbConnection(c.env.DATABASE_URL);
       const courseUseCase = new CourseUseCase(db);
-      const course = await courseUseCase.updateCourseCategory(
-        courseId,
-        validatedData.categoryId
-      );
+      const course = await courseUseCase.updateCourseCategory(courseId, validatedData.categoryId);
       return c.json(course);
     } catch (error) {
       if (error instanceof CourseNotFoundError) {
@@ -218,7 +206,7 @@ Course.put(
       }
       return HandleError(c, error, "講座カテゴリー編集エラー");
     }
-  }
+  },
 );
 
 /**
@@ -235,10 +223,7 @@ Course.put(
       const { course_id: courseId } = c.req.valid("param");
       const db = getDbConnection(c.env.DATABASE_URL);
       const courseUseCase = new CourseUseCase(db);
-      const course = await courseUseCase.updateCoursePrice(
-        courseId,
-        validatedData.price
-      );
+      const course = await courseUseCase.updateCoursePrice(courseId, validatedData.price);
       return c.json(course);
     } catch (error) {
       if (error instanceof CourseNotFoundError) {
@@ -246,7 +231,7 @@ Course.put(
       }
       return HandleError(c, error, "講座価格編集エラー");
     }
-  }
+  },
 );
 
 /**
@@ -269,7 +254,7 @@ Course.put(
       }
       return HandleError(c, error, "講座論理削除エラー");
     }
-  }
+  },
 );
 
 /**
@@ -292,7 +277,7 @@ Course.put(
       }
       return HandleError(c, error, "講座非公開エラー");
     }
-  }
+  },
 );
 
 /**
@@ -318,7 +303,7 @@ Course.put(
       }
       return HandleError(c, error, "講座公開エラー");
     }
-  }
+  },
 );
 
 /**
@@ -341,7 +326,7 @@ Course.delete(
       }
       return HandleError(c, error, "講座物理削除エラー");
     }
-  }
+  },
 );
 
 export default Course;
