@@ -7,15 +7,17 @@ import { CategoryNotFoundError } from "../../../error/CategoryNotFoundError";
  * カテゴリーのuseCaseを管理するクラス
  */
 export class CategoryUseCase {
-  constructor(private db: PostgresJsDatabase<typeof schema>) {}
+  private categoryRepository: CategoryRepository;
+  constructor(private db: PostgresJsDatabase<typeof schema>) {
+    this.categoryRepository = new CategoryRepository(this.db);
+  }
 
   /**
    * カテゴリー一覧を取得する
    * @returns カテゴリー一覧
    */
   async getCategories() {
-    const categoryRepository = new CategoryRepository(this.db);
-    const categories = await categoryRepository.getCategories();
+    const categories = await this.categoryRepository.getCategories();
     return categories;
   }
 
@@ -38,9 +40,7 @@ export class CategoryUseCase {
    */
   async updateCategory(categoryId: string, name: string) {
     const categoryRepository = new CategoryRepository(this.db);
-    const existsCategory = await categoryRepository.checkCategoryExists(
-      categoryId
-    );
+    const existsCategory = await categoryRepository.checkCategoryExists(categoryId);
     if (!existsCategory) {
       throw new CategoryNotFoundError();
     }
@@ -57,9 +57,7 @@ export class CategoryUseCase {
    */
   async deleteCategory(categoryId: string) {
     const categoryRepository = new CategoryRepository(this.db);
-    const existsCategory = await categoryRepository.checkCategoryExists(
-      categoryId
-    );
+    const existsCategory = await categoryRepository.checkCategoryExists(categoryId);
     if (!existsCategory) {
       throw new CategoryNotFoundError();
     }
