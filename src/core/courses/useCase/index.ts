@@ -104,12 +104,13 @@ export class CourseUseCase {
    * @returns 講座
    */
   async updateCourseThumbnail(courseId: string, imageUrl: string) {
-    const courseRepository = new CourseRepository(this.db);
-    const existsCourse = await courseRepository.checkCourseExists(courseId);
+    // 講座の存在チェック
+    const existsCourse = await this.courseRepository.checkCourseExists(courseId);
     if (!existsCourse) {
       throw new CourseNotFoundError();
     }
-    const course = await courseRepository.updateCourse(courseId, { imageUrl });
+
+    const course = await this.courseRepository.updateCourse(courseId, { imageUrl });
     return course;
   }
 
