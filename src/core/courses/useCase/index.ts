@@ -121,12 +121,13 @@ export class CourseUseCase {
    * @returns 講座
    */
   async updateCoursePrice(courseId: string, price: number) {
-    const courseRepository = new CourseRepository(this.db);
-    const existsCourse = await courseRepository.checkCourseExists(courseId);
+    // 講座の存在チェック
+    const existsCourse = await this.courseRepository.checkCourseExists(courseId);
     if (!existsCourse) {
       throw new CourseNotFoundError();
     }
-    const course = await courseRepository.updateCourse(courseId, { price });
+
+    const course = await this.courseRepository.updateCourse(courseId, { price });
     return course;
   }
 
