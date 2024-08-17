@@ -16,9 +16,11 @@ import Mux from "@mux/mux-node";
  */
 export class CourseUseCase {
   private courseRepository: CourseRepository;
+  private categoryRepository: CategoryRepository;
 
   constructor(private db: PostgresJsDatabase<typeof schema>) {
     this.courseRepository = new CourseRepository(this.db);
+    this.categoryRepository = new CategoryRepository(this.db);
   }
 
   /**
@@ -138,19 +140,19 @@ export class CourseUseCase {
    * @returns 講座
    */
   async updateCourseCategory(courseId: string, categoryId: string) {
-    const courseRepository = new CourseRepository(this.db);
-    const categoryRepository = new CategoryRepository(this.db);
-    const existsCourse = await courseRepository.checkCourseExists(courseId);
+    // 講座の存在チェック
+    const existsCourse = await this.courseRepository.checkCourseExists(courseId);
     if (!existsCourse) {
       throw new CourseNotFoundError();
     }
-    const existsCategory = await categoryRepository.checkCategoryExists(categoryId);
+
+    // カテゴリーの存在チェック
+    const existsCategory = await this.categoryRepository.checkCategoryExists(categoryId);
     if (!existsCategory) {
       throw new CategoryNotFoundError();
     }
-    const course = await courseRepository.updateCourse(courseId, {
-      categoryId,
-    });
+
+    const course = await this.courseRepository.updateCourse(courseId, { categoryId });
     return course;
   }
 
