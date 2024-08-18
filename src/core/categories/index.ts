@@ -39,14 +39,12 @@ Category.post(
       const validatedData = c.req.valid("json");
       const db = getDbConnection(c.env.DATABASE_URL);
       const categoryUseCase = new CategoryUseCase(db);
-      const category = await categoryUseCase.registerCategory(
-        validatedData.name
-      );
+      const category = await categoryUseCase.registerCategory(validatedData.name);
       return c.json(category);
     } catch (error) {
       return HandleError(c, error, "カテゴリー登録エラー");
     }
-  }
+  },
 );
 
 /**
@@ -63,10 +61,7 @@ Category.put(
       const validatedData = c.req.valid("json");
       const db = getDbConnection(c.env.DATABASE_URL);
       const categoryUseCase = new CategoryUseCase(db);
-      const category = await categoryUseCase.updateCategory(
-        categoryId,
-        validatedData.name
-      );
+      const category = await categoryUseCase.updateCategory(categoryId, validatedData.name);
       return c.json(category);
     } catch (error) {
       if (error instanceof CategoryNotFoundError) {
@@ -74,7 +69,7 @@ Category.put(
       }
       return HandleError(c, error, "カテゴリー編集エラー");
     }
-  }
+  },
 );
 
 /**
@@ -97,7 +92,7 @@ Category.delete(
       }
       return HandleError(c, error, "カテゴリー削除エラー");
     }
-  }
+  },
 );
 
 export default Category;

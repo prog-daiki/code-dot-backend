@@ -27,8 +27,7 @@ export class CategoryUseCase {
    * @returns 登録したカテゴリー
    */
   async registerCategory(name: string) {
-    const categoryRepository = new CategoryRepository(this.db);
-    const category = await categoryRepository.registerCategory({ name });
+    const category = await this.categoryRepository.registerCategory({ name });
     return category;
   }
 
