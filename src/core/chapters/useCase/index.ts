@@ -84,15 +84,15 @@ export class ChapterUseCase {
    * @param list
    */
   async reorderChapters(courseId: string, list: { id: string; position: number }[]) {
-    const chapterRepository = new ChapterRepository(this.db);
-    const courseRepository = new CourseRepository(this.db);
-    const existsCourse = await courseRepository.checkCourseExists(courseId);
+    // 講座の存在チェック
+    const existsCourse = await this.courseRepository.checkCourseExists(courseId);
     if (!existsCourse) {
       throw new CourseNotFoundError();
     }
+
     await Promise.all(
       list.map(async (chapter) => {
-        await chapterRepository.updateChapter(chapter.id, {
+        await this.chapterRepository.updateChapter(chapter.id, {
           position: chapter.position,
         });
       }),
