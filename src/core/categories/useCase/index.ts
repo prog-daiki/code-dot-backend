@@ -54,12 +54,13 @@ export class CategoryUseCase {
    * @returns 削除したカテゴリー
    */
   async deleteCategory(categoryId: string) {
-    const categoryRepository = new CategoryRepository(this.db);
-    const existsCategory = await categoryRepository.checkCategoryExists(categoryId);
+    // カテゴリーの存在チェック
+    const existsCategory = await this.categoryRepository.checkCategoryExists(categoryId);
     if (!existsCategory) {
       throw new CategoryNotFoundError();
     }
-    const category = await categoryRepository.deleteCategory(categoryId);
+
+    const category = await this.categoryRepository.deleteCategory(categoryId);
     return category;
   }
 }
