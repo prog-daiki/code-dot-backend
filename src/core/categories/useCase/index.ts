@@ -38,14 +38,13 @@ export class CategoryUseCase {
    * @returns 更新したカテゴリー
    */
   async updateCategory(categoryId: string, name: string) {
-    const categoryRepository = new CategoryRepository(this.db);
-    const existsCategory = await categoryRepository.checkCategoryExists(categoryId);
+    // カテゴリーの存在チェック
+    const existsCategory = await this.categoryRepository.checkCategoryExists(categoryId);
     if (!existsCategory) {
       throw new CategoryNotFoundError();
     }
-    const category = await categoryRepository.updateCategory(categoryId, {
-      name,
-    });
+
+    const category = await this.categoryRepository.updateCategory(categoryId, { name });
     return category;
   }
 
