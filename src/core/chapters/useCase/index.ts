@@ -14,7 +14,13 @@ import { ChapterRequiredFieldsEmptyError } from "../../../error/ChapterRequiredF
  * チャプターのuseCaseを管理するクラス
  */
 export class ChapterUseCase {
-  constructor(private db: PostgresJsDatabase<typeof schema>) {}
+  private chapterRepository: ChapterRepository;
+  private courseRepository: CourseRepository;
+
+  constructor(private db: PostgresJsDatabase<typeof schema>) {
+    this.chapterRepository = new ChapterRepository(this.db);
+    this.courseRepository = new CourseRepository(this.db);
+  }
 
   /**
    * 講座のチャプターを一覧取得する
@@ -22,13 +28,13 @@ export class ChapterUseCase {
    * @returns
    */
   async getChapters(courseId: string) {
-    const chapterRepository = new ChapterRepository(this.db);
-    const courseRepository = new CourseRepository(this.db);
-    const existsCourse = await courseRepository.checkCourseExists(courseId);
+    // 講座の存在チェック
+    const existsCourse = await this.courseRepository.checkCourseExists(courseId);
     if (!existsCourse) {
       throw new CourseNotFoundError();
     }
-    const chapters = await chapterRepository.getChapters(courseId);
+
+    const chapters = await this.chapterRepository.getChapters(courseId);
     return chapters;
   }
 
@@ -66,10 +72,7 @@ export class ChapterUseCase {
     if (!existsCourse) {
       throw new CourseNotFoundError();
     }
-    const chapter = await chapterRepository.registerChapter(
-      { title },
-      courseId
-    );
+    const chapter = await chapterRepository.registerChapter({ title }, courseId);
     return chapter;
   }
 
@@ -78,10 +81,7 @@ export class ChapterUseCase {
    * @param courseId
    * @param list
    */
-  async reorderChapters(
-    courseId: string,
-    list: { id: string; position: number }[]
-  ) {
+  async reorderChapters(courseId: string, list: { id: string; position: number }[]) {
     const chapterRepository = new ChapterRepository(this.db);
     const courseRepository = new CourseRepository(this.db);
     const existsCourse = await courseRepository.checkCourseExists(courseId);
@@ -93,7 +93,7 @@ export class ChapterUseCase {
         await chapterRepository.updateChapter(chapter.id, {
           position: chapter.position,
         });
-      })
+      }),
     );
   }
 
@@ -128,11 +128,7 @@ export class ChapterUseCase {
    * @param courseId
    * @returns
    */
-  async updateChapterDescription(
-    description: string,
-    courseId: string,
-    chapterId: string
-  ) {
+  async updateChapterDescription(description: string, courseId: string, chapterId: string) {
     const chapterRepository = new ChapterRepository(this.db);
     const courseRepository = new CourseRepository(this.db);
     const existsCourse = await courseRepository.checkCourseExists(courseId);
@@ -156,11 +152,7 @@ export class ChapterUseCase {
    * @param courseId
    * @returns
    */
-  async updateChapterAccess(
-    freeFlag: boolean,
-    courseId: string,
-    chapterId: string
-  ) {
+  async updateChapterAccess(freeFlag: boolean, courseId: string, chapterId: string) {
     const chapterRepository = new ChapterRepository(this.db);
     const courseRepository = new CourseRepository(this.db);
     const existsCourse = await courseRepository.checkCourseExists(courseId);
@@ -185,12 +177,7 @@ export class ChapterUseCase {
    * @param c
    * @returns
    */
-  async updateChapterVideo(
-    videoUrl: string,
-    courseId: string,
-    chapterId: string,
-    c: Context
-  ) {
+  async updateChapterVideo(videoUrl: string, courseId: string, chapterId: string, c: Context) {
     const chapterRepository = new ChapterRepository(this.db);
     const courseRepository = new CourseRepository(this.db);
     const muxDataRepository = new MuxDataRepository(this.db);
@@ -218,11 +205,7 @@ export class ChapterUseCase {
       playback_policy: ["public"],
       test: false,
     });
-    await muxDataRepository.registerMuxData(
-      chapterId,
-      asset.id,
-      asset.playback_ids![0].id
-    );
+    await muxDataRepository.registerMuxData(chapterId, asset.id, asset.playback_ids![0].id);
     const chapter = await chapterRepository.updateChapter(chapterId, {
       videoUrl,
     });
@@ -319,11 +302,7 @@ export class ChapterUseCase {
       throw new MuxDataNotFoundError();
     }
     const data = await chapterRepository.getChapter(chapterId);
-    if (
-      !data.chapter.title ||
-      !data.chapter.description ||
-      !data.chapter.videoUrl
-    ) {
+    if (!data.chapter.title || !data.chapter.description || !data.chapter.videoUrl) {
       throw new ChapterRequiredFieldsEmptyError();
     }
 
