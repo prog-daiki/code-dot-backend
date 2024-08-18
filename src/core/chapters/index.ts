@@ -21,7 +21,7 @@ const Chapter = new Hono<{ Bindings: Env }>();
  */
 Chapter.get(
   "/",
-  validateAuth,
+  validateAdmin,
   zValidator("param", z.object({ course_id: z.string() })),
   async (c) => {
     try {
