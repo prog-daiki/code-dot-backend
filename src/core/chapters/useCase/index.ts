@@ -45,17 +45,19 @@ export class ChapterUseCase {
    * @returns
    */
   async getChapter(courseId: string, chapterId: string) {
-    const chapterRepository = new ChapterRepository(this.db);
-    const courseRepository = new CourseRepository(this.db);
-    const existsCourse = await courseRepository.checkCourseExists(courseId);
+    // 講座の存在チェック
+    const existsCourse = await this.courseRepository.checkCourseExists(courseId);
     if (!existsCourse) {
       throw new CourseNotFoundError();
     }
-    const existsChapter = await chapterRepository.checkChapterExists(chapterId);
+
+    // チャプターの存在チェック
+    const existsChapter = await this.chapterRepository.checkChapterExists(chapterId);
     if (!existsChapter) {
       throw new ChapterNotFoundError();
     }
-    const chapter = await chapterRepository.getChapter(chapterId);
+
+    const chapter = await this.chapterRepository.getChapter(chapterId);
     return chapter;
   }
 

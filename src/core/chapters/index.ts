@@ -40,7 +40,7 @@ Chapter.get(
 );
 
 /**
- * チャプター取得API
+ * チャプター取得API（管理者）
  */
 Chapter.get(
   "/:chapter_id",
