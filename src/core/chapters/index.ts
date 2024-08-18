@@ -44,7 +44,7 @@ Chapter.get(
  */
 Chapter.get(
   "/:chapter_id",
-  validateAuth,
+  validateAdmin,
   zValidator("param", z.object({ course_id: z.string(), chapter_id: z.string() })),
   async (c) => {
     try {
