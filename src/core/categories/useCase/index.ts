@@ -7,15 +7,17 @@ import { CategoryNotFoundError } from "../../../error/CategoryNotFoundError";
  * カテゴリーのuseCaseを管理するクラス
  */
 export class CategoryUseCase {
-  constructor(private db: PostgresJsDatabase<typeof schema>) {}
+  private categoryRepository: CategoryRepository;
+  constructor(private db: PostgresJsDatabase<typeof schema>) {
+    this.categoryRepository = new CategoryRepository(this.db);
+  }
 
   /**
    * カテゴリー一覧を取得する
    * @returns カテゴリー一覧
    */
   async getCategories() {
-    const categoryRepository = new CategoryRepository(this.db);
-    const categories = await categoryRepository.getCategories();
+    const categories = await this.categoryRepository.getCategories();
     return categories;
   }
 
@@ -25,8 +27,7 @@ export class CategoryUseCase {
    * @returns 登録したカテゴリー
    */
   async registerCategory(name: string) {
-    const categoryRepository = new CategoryRepository(this.db);
-    const category = await categoryRepository.registerCategory({ name });
+    const category = await this.categoryRepository.registerCategory({ name });
     return category;
   }
 
@@ -37,16 +38,13 @@ export class CategoryUseCase {
    * @returns 更新したカテゴリー
    */
   async updateCategory(categoryId: string, name: string) {
-    const categoryRepository = new CategoryRepository(this.db);
-    const existsCategory = await categoryRepository.checkCategoryExists(
-      categoryId
-    );
+    // カテゴリーの存在チェック
+    const existsCategory = await this.categoryRepository.checkCategoryExists(categoryId);
     if (!existsCategory) {
       throw new CategoryNotFoundError();
     }
-    const category = await categoryRepository.updateCategory(categoryId, {
-      name,
-    });
+
+    const category = await this.categoryRepository.updateCategory(categoryId, { name });
     return category;
   }
 
@@ -56,14 +54,13 @@ export class CategoryUseCase {
    * @returns 削除したカテゴリー
    */
   async deleteCategory(categoryId: string) {
-    const categoryRepository = new CategoryRepository(this.db);
-    const existsCategory = await categoryRepository.checkCategoryExists(
-      categoryId
-    );
+    // カテゴリーの存在チェック
+    const existsCategory = await this.categoryRepository.checkCategoryExists(categoryId);
     if (!existsCategory) {
       throw new CategoryNotFoundError();
     }
-    const category = await categoryRepository.deleteCategory(categoryId);
+
+    const category = await this.categoryRepository.deleteCategory(categoryId);
     return category;
   }
 }
