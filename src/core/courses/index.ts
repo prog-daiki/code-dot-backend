@@ -60,6 +60,26 @@ Course.get(
 );
 
 /**
+ * 公開講座取得API
+ */
+Course.get(
+  "/:course_id/publish",
+  validateAuth,
+  zValidator("param", z.object({ course_id: z.string() })),
+  async (c) => {
+    const { course_id: courseId } = c.req.valid("param");
+    const db = getDbConnection(c.env.DATABASE_URL);
+    const courseUseCase = new CourseUseCase(db);
+    try {
+      const course = await courseUseCase.getPublishCourse(courseId);
+      return c.json(course);
+    } catch (error) {
+      return HandleError(c, error, "公開講座取得エラー");
+    }
+  },
+);
+
+/**
  * 講座取得API（管理者）
  */
 Course.get(

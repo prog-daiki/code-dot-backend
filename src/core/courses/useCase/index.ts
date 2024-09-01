@@ -32,9 +32,31 @@ export class CourseUseCase {
     return courses;
   }
 
+  /**
+   * 公開講座一覧を取得する
+   * @param title タイトル
+   * @param categoryId カテゴリーID
+   * @returns 公開講座一覧
+   */
   async getPublishCourses(title?: string, categoryId?: string) {
     const courses = await this.courseRepository.getPublishCourses(title, categoryId);
     return courses;
+  }
+
+  /**
+   * 公開講座を取得する
+   * @param courseId 講座ID
+   * @returns 公開講座
+   */
+  async getPublishCourse(courseId: string) {
+    // 講座の存在チェック
+    const existsCourse = await this.courseRepository.checkCourseExists(courseId);
+    if (!existsCourse) {
+      throw new CourseNotFoundError();
+    }
+
+    const course = await this.courseRepository.getPublishCourse(courseId);
+    return course;
   }
 
   /**
