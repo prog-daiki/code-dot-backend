@@ -57,15 +57,6 @@ export const purchase = pgTable("purchase", {
   updateDate: timestamp("update_date", { mode: "date" }).notNull(),
 });
 
-export const purchaseHistory = pgTable("purchase_history", {
-  id: text("id").primaryKey(),
-  courseId: text("course_id").references(() => course.id),
-  courseTitle: text("course_title"),
-  userId: text("user_id"),
-  createDate: timestamp("create_date", { mode: "date" }).notNull(),
-  updateDate: timestamp("update_date", { mode: "date" }).notNull(),
-});
-
 export const stripeCustomer = pgTable("stripe_customer", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull(),
