@@ -1,6 +1,6 @@
 import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import * as schema from "../../../../db/schema";
-import { course, chapter, category } from "../../../../db/schema";
+import { course, chapter, category, muxData } from "../../../../db/schema";
 import { desc, eq, and, sql, ilike } from "drizzle-orm";
 import { getJstDate } from "../../../sharedInfo/date";
 import { createId } from "@paralleldrive/cuid2";
@@ -17,10 +17,7 @@ export class CourseRepository {
    * @returns
    */
   async checkCourseExists(courseId: string) {
-    const [existCourse] = await this.db
-      .select()
-      .from(course)
-      .where(eq(course.id, courseId));
+    const [existCourse] = await this.db.select().from(course).where(eq(course.id, courseId));
     return !!existCourse;
   }
 
@@ -30,10 +27,7 @@ export class CourseRepository {
    * @returns
    */
   async getCourse(courseId: string) {
-    const [data] = await this.db
-      .select()
-      .from(course)
-      .where(eq(course.id, courseId));
+    const [data] = await this.db.select().from(course).where(eq(course.id, courseId));
     return data;
   }
 
@@ -42,10 +36,7 @@ export class CourseRepository {
    * @returns
    */
   async getCourses() {
-    const data = await this.db
-      .select()
-      .from(course)
-      .orderBy(desc(course.updateDate));
+    const data = await this.db.select().from(course).orderBy(desc(course.updateDate));
     return data;
   }
 
@@ -63,7 +54,7 @@ export class CourseRepository {
         chapters: sql<
           (typeof chapter)[]
         >`coalesce(json_agg(${chapter}) filter (where ${chapter.id} is not null), '[]')`.as(
-          "chapters"
+          "chapters",
         ),
       })
       .from(course)
@@ -74,11 +65,51 @@ export class CourseRepository {
           eq(course.publishFlag, true),
           eq(chapter.publishFlag, true),
           title ? ilike(course.title, `%${title}%`) : undefined,
-          categoryId ? eq(course.categoryId, categoryId) : undefined
-        )
+          categoryId ? eq(course.categoryId, categoryId) : undefined,
+        ),
       )
       .groupBy(course.id, category.id)
       .orderBy(desc(course.updateDate));
+    return data;
+  }
+
+  /**
+   * 公開講座を取得する
+   * @param courseId
+   * @returns
+   */
+  async getPublishCourse(courseId: string) {
+    const [data] = await this.db
+      .select({
+        course,
+        category,
+        chapters: sql<(typeof chapter)[]>`
+          json_agg(
+            json_build_object(
+              'id', ${chapter.id},
+              'title', ${chapter.title},
+              'description', ${chapter.description},
+              'position', ${chapter.position},
+              'isPublished', ${chapter.publishFlag},
+              'isFree', ${chapter.freeFlag},
+              'muxData', json_build_object(
+                'id', ${muxData.id},
+                'assetId', ${muxData.assetId},
+                'playbackId', ${muxData.playbackId}
+              )
+            )
+            ORDER BY ${chapter.position} ASC
+          ) filter (where ${chapter.id} is not null)
+        `.as("chapters"),
+      })
+      .from(course)
+      .leftJoin(chapter, eq(course.id, chapter.courseId))
+      .leftJoin(category, eq(course.categoryId, category.id))
+      .leftJoin(muxData, eq(chapter.id, muxData.chapterId))
+      .where(
+        and(eq(course.id, courseId), eq(course.publishFlag, true), eq(chapter.publishFlag, true)),
+      )
+      .groupBy(course.id, category.id);
     return data;
   }
 
@@ -88,10 +119,7 @@ export class CourseRepository {
    * @param userId
    * @returns
    */
-  async registerCourse(
-    values: Pick<typeof course.$inferInsert, "title">,
-    userId: string
-  ) {
+  async registerCourse(values: Pick<typeof course.$inferInsert, "title">, userId: string) {
     const currentJstDate = getJstDate();
     const [data] = await this.db
       .insert(course)
@@ -115,7 +143,7 @@ export class CourseRepository {
    */
   async updateCourse(
     courseId: string,
-    updateData: Partial<Omit<typeof course.$inferInsert, "id" | "createDate">>
+    updateData: Partial<Omit<typeof course.$inferInsert, "id" | "createDate">>,
   ) {
     const currentJstDate = getJstDate();
     const [data] = await this.db
@@ -136,10 +164,7 @@ export class CourseRepository {
    * @returns
    */
   async deleteCourse(courseId: string) {
-    const [data] = await this.db
-      .delete(course)
-      .where(eq(course.id, courseId))
-      .returning();
+    const [data] = await this.db.delete(course).where(eq(course.id, courseId)).returning();
     return data;
   }
 }

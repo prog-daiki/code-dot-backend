@@ -17,11 +17,11 @@ import { MuxDataNotFoundError } from "../../error/MuxDataNotFoundError";
 const Chapter = new Hono<{ Bindings: Env }>();
 
 /**
- * チャプター一覧取得API
+ * チャプター一覧取得API（管理者）
  */
 Chapter.get(
   "/",
-  validateAuth,
+  validateAdmin,
   zValidator("param", z.object({ course_id: z.string() })),
   async (c) => {
     try {
@@ -36,23 +36,19 @@ Chapter.get(
       }
       return HandleError(c, error, "チャプター一覧取得エラー");
     }
-  }
+  },
 );
 
 /**
- * チャプター取得API
+ * チャプター取得API（管理者）
  */
 Chapter.get(
   "/:chapter_id",
-  validateAuth,
-  zValidator(
-    "param",
-    z.object({ course_id: z.string(), chapter_id: z.string() })
-  ),
+  validateAdmin,
+  zValidator("param", z.object({ course_id: z.string(), chapter_id: z.string() })),
   async (c) => {
     try {
-      const { course_id: courseId, chapter_id: chapterId } =
-        c.req.valid("param");
+      const { course_id: courseId, chapter_id: chapterId } = c.req.valid("param");
       const db = getDbConnection(c.env.DATABASE_URL);
       const chapterUseCase = new ChapterUseCase(db);
       const chapter = await chapterUseCase.getChapter(courseId, chapterId);
@@ -66,7 +62,7 @@ Chapter.get(
       }
       return HandleError(c, error, "チャプター取得エラー");
     }
-  }
+  },
 );
 
 /**
@@ -83,10 +79,7 @@ Chapter.post(
       const { course_id: courseId } = c.req.valid("param");
       const db = getDbConnection(c.env.DATABASE_URL);
       const chapterUseCase = new ChapterUseCase(db);
-      const chapter = await chapterUseCase.registerChapter(
-        validatedData.title,
-        courseId
-      );
+      const chapter = await chapterUseCase.registerChapter(validatedData.title, courseId);
       return c.json(chapter);
     } catch (error) {
       if (error instanceof CourseNotFoundError) {
@@ -94,7 +87,7 @@ Chapter.post(
       }
       return HandleError(c, error, "チャプター登録エラー");
     }
-  }
+  },
 );
 
 /**
@@ -108,7 +101,7 @@ Chapter.put(
     "json",
     z.object({
       list: z.array(z.object({ id: z.string(), position: z.number() })),
-    })
+    }),
   ),
   async (c) => {
     try {
@@ -124,7 +117,7 @@ Chapter.put(
       }
       return HandleError(c, error, "チャプター並び替えエラー");
     }
-  }
+  },
 );
 
 /**
@@ -133,22 +126,18 @@ Chapter.put(
 Chapter.put(
   "/:chapter_id/title",
   validateAdmin,
-  zValidator(
-    "param",
-    z.object({ chapter_id: z.string(), course_id: z.string() })
-  ),
+  zValidator("param", z.object({ chapter_id: z.string(), course_id: z.string() })),
   zValidator("json", insertChapterSchema.pick({ title: true })),
   async (c) => {
     try {
-      const { course_id: courseId, chapter_id: chapterId } =
-        c.req.valid("param");
+      const { course_id: courseId, chapter_id: chapterId } = c.req.valid("param");
       const validatedData = c.req.valid("json");
       const db = getDbConnection(c.env.DATABASE_URL);
       const chapterUseCase = new ChapterUseCase(db);
       const chapter = await chapterUseCase.updateChapterTitle(
         validatedData.title,
         courseId,
-        chapterId
+        chapterId,
       );
       return c.json(chapter);
     } catch (error) {
@@ -160,7 +149,7 @@ Chapter.put(
       }
       return HandleError(c, error, "チャプタータイトル編集エラー");
     }
-  }
+  },
 );
 
 /**
@@ -169,22 +158,18 @@ Chapter.put(
 Chapter.put(
   "/:chapter_id/description",
   validateAdmin,
-  zValidator(
-    "param",
-    z.object({ chapter_id: z.string(), course_id: z.string() })
-  ),
+  zValidator("param", z.object({ chapter_id: z.string(), course_id: z.string() })),
   zValidator("json", insertChapterSchema.pick({ description: true })),
   async (c) => {
     try {
-      const { course_id: courseId, chapter_id: chapterId } =
-        c.req.valid("param");
+      const { course_id: courseId, chapter_id: chapterId } = c.req.valid("param");
       const validatedData = c.req.valid("json");
       const db = getDbConnection(c.env.DATABASE_URL);
       const chapterUseCase = new ChapterUseCase(db);
       const chapter = await chapterUseCase.updateChapterDescription(
         validatedData.description,
         courseId,
-        chapterId
+        chapterId,
       );
       return c.json(chapter);
     } catch (error) {
@@ -196,7 +181,7 @@ Chapter.put(
       }
       return HandleError(c, error, "チャプター詳細編集エラー");
     }
-  }
+  },
 );
 
 /**
@@ -205,22 +190,18 @@ Chapter.put(
 Chapter.put(
   "/:chapter_id/access",
   validateAdmin,
-  zValidator(
-    "param",
-    z.object({ chapter_id: z.string(), course_id: z.string() })
-  ),
+  zValidator("param", z.object({ chapter_id: z.string(), course_id: z.string() })),
   zValidator("json", insertChapterSchema.pick({ freeFlag: true })),
   async (c) => {
     try {
-      const { course_id: courseId, chapter_id: chapterId } =
-        c.req.valid("param");
+      const { course_id: courseId, chapter_id: chapterId } = c.req.valid("param");
       const validatedData = c.req.valid("json");
       const db = getDbConnection(c.env.DATABASE_URL);
       const chapterUseCase = new ChapterUseCase(db);
       const chapter = await chapterUseCase.updateChapterAccess(
         validatedData!.freeFlag!,
         courseId,
-        chapterId
+        chapterId,
       );
       return c.json(chapter);
     } catch (error) {
@@ -232,7 +213,7 @@ Chapter.put(
       }
       return HandleError(c, error, "チャプターアクセス編集エラー");
     }
-  }
+  },
 );
 
 /**
@@ -241,15 +222,11 @@ Chapter.put(
 Chapter.put(
   "/:chapter_id/video",
   validateAdmin,
-  zValidator(
-    "param",
-    z.object({ chapter_id: z.string(), course_id: z.string() })
-  ),
+  zValidator("param", z.object({ chapter_id: z.string(), course_id: z.string() })),
   zValidator("json", insertChapterSchema.pick({ videoUrl: true })),
   async (c) => {
     try {
-      const { course_id: courseId, chapter_id: chapterId } =
-        c.req.valid("param");
+      const { course_id: courseId, chapter_id: chapterId } = c.req.valid("param");
       const validatedData = c.req.valid("json");
       const db = getDbConnection(c.env.DATABASE_URL);
       const chapterUseCase = new ChapterUseCase(db);
@@ -257,7 +234,7 @@ Chapter.put(
         validatedData.videoUrl,
         courseId,
         chapterId,
-        c
+        c,
       );
       return c.json(chapter);
     } catch (error) {
@@ -269,7 +246,7 @@ Chapter.put(
       }
       return HandleError(c, error, "チャプター動画編集エラー");
     }
-  }
+  },
 );
 
 /**
@@ -278,21 +255,13 @@ Chapter.put(
 Chapter.delete(
   "/:chapter_id",
   validateAdmin,
-  zValidator(
-    "param",
-    z.object({ chapter_id: z.string(), course_id: z.string() })
-  ),
+  zValidator("param", z.object({ chapter_id: z.string(), course_id: z.string() })),
   async (c) => {
     try {
-      const { course_id: courseId, chapter_id: chapterId } =
-        c.req.valid("param");
+      const { course_id: courseId, chapter_id: chapterId } = c.req.valid("param");
       const db = getDbConnection(c.env.DATABASE_URL);
       const chapterUseCase = new ChapterUseCase(db);
-      const chapter = await chapterUseCase.deleteChapter(
-        courseId,
-        chapterId,
-        c
-      );
+      const chapter = await chapterUseCase.deleteChapter(courseId, chapterId, c);
       return c.json(chapter);
     } catch (error) {
       if (error instanceof CourseNotFoundError) {
@@ -303,7 +272,7 @@ Chapter.delete(
       }
       return HandleError(c, error, "チャプター削除エラー");
     }
-  }
+  },
 );
 
 /**
@@ -312,20 +281,13 @@ Chapter.delete(
 Chapter.put(
   "/:chapter_id/unpublish",
   validateAdmin,
-  zValidator(
-    "param",
-    z.object({ chapter_id: z.string(), course_id: z.string() })
-  ),
+  zValidator("param", z.object({ chapter_id: z.string(), course_id: z.string() })),
   async (c) => {
     try {
-      const { course_id: courseId, chapter_id: chapterId } =
-        c.req.valid("param");
+      const { course_id: courseId, chapter_id: chapterId } = c.req.valid("param");
       const db = getDbConnection(c.env.DATABASE_URL);
       const chapterUseCase = new ChapterUseCase(db);
-      const chapter = await chapterUseCase.unpublishChapter(
-        courseId,
-        chapterId
-      );
+      const chapter = await chapterUseCase.unpublishChapter(courseId, chapterId);
       return c.json(chapter);
     } catch (error) {
       if (error instanceof CourseNotFoundError) {
@@ -336,7 +298,7 @@ Chapter.put(
       }
       return HandleError(c, error, "チャプター非公開エラー");
     }
-  }
+  },
 );
 
 /**
@@ -345,14 +307,10 @@ Chapter.put(
 Chapter.put(
   "/:chapter_id/publish",
   validateAdmin,
-  zValidator(
-    "param",
-    z.object({ chapter_id: z.string(), course_id: z.string() })
-  ),
+  zValidator("param", z.object({ chapter_id: z.string(), course_id: z.string() })),
   async (c) => {
     try {
-      const { course_id: courseId, chapter_id: chapterId } =
-        c.req.valid("param");
+      const { course_id: courseId, chapter_id: chapterId } = c.req.valid("param");
       const db = getDbConnection(c.env.DATABASE_URL);
       const chapterUseCase = new ChapterUseCase(db);
       const chapter = await chapterUseCase.publishChapter(courseId, chapterId);
@@ -372,7 +330,7 @@ Chapter.put(
       }
       return HandleError(c, error, "チャプター公開エラー");
     }
-  }
+  },
 );
 
 export default Chapter;

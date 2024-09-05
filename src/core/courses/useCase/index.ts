@@ -10,6 +10,12 @@ import { ChapterRepository } from "../../chapters/repository";
 import { CourseRequiredFieldsEmptyError } from "../../../error/CourseRequiredFieldsEmptyError";
 import { MuxDataRepository } from "../../muxData/repository";
 import Mux from "@mux/mux-node";
+import { PurchaseRepository } from "../../purchase/repository";
+import { PurchaseAlreadyExistsError } from "../../../error/PurchaseAlreadyExistsError";
+import Stripe from "stripe";
+import { stripeCustomer } from "../../../../db/schema";
+import { StripeCustomerRepository } from "../../stripeCustomer/repository";
+import { stripe } from "../../../lib/stripe";
 
 /**
  * 講座のuseCaseを管理するクラス
@@ -17,10 +23,14 @@ import Mux from "@mux/mux-node";
 export class CourseUseCase {
   private courseRepository: CourseRepository;
   private categoryRepository: CategoryRepository;
+  private purchaseRepository: PurchaseRepository;
+  private stripeCustomerRepository: StripeCustomerRepository;
 
   constructor(private db: PostgresJsDatabase<typeof schema>) {
     this.courseRepository = new CourseRepository(this.db);
     this.categoryRepository = new CategoryRepository(this.db);
+    this.purchaseRepository = new PurchaseRepository(this.db);
+    this.stripeCustomerRepository = new StripeCustomerRepository(this.db);
   }
 
   /**
@@ -32,9 +42,31 @@ export class CourseUseCase {
     return courses;
   }
 
+  /**
+   * 公開講座一覧を取得する
+   * @param title タイトル
+   * @param categoryId カテゴリーID
+   * @returns 公開講座一覧
+   */
   async getPublishCourses(title?: string, categoryId?: string) {
     const courses = await this.courseRepository.getPublishCourses(title, categoryId);
     return courses;
+  }
+
+  /**
+   * 公開講座を取得する
+   * @param courseId 講座ID
+   * @returns 公開講座
+   */
+  async getPublishCourse(courseId: string) {
+    // 講座の存在チェック
+    const existsCourse = await this.courseRepository.checkCourseExists(courseId);
+    if (!existsCourse) {
+      throw new CourseNotFoundError();
+    }
+
+    const course = await this.courseRepository.getPublishCourse(courseId);
+    return course;
   }
 
   /**
@@ -248,5 +280,68 @@ export class CourseUseCase {
     }
     const course = await courseRepository.deleteCourse(courseId);
     return course;
+  }
+
+  /**
+   * 講座を購入する
+   * @param courseId 講座ID
+   * @param userId ユーザーID
+   * @returns 購入情報
+   */
+  async checkoutCourse(courseId: string, userId: string, emailAddresses: string, c: Context) {
+    // 講座存在チェック
+    const course = await this.courseRepository.getCourse(courseId);
+    if (!course) {
+      throw new CourseNotFoundError();
+    }
+
+    // 講座をすでに購入しているかチェック
+    const existsPurchase = await this.purchaseRepository.existsPurchase(courseId, userId);
+    if (existsPurchase) {
+      throw new PurchaseAlreadyExistsError();
+    }
+
+    // 購入情報を作成する
+    const line_items: Stripe.Checkout.SessionCreateParams.LineItem[] = [
+      {
+        quantity: 1,
+        price_data: {
+          currency: "JPY",
+          product_data: {
+            name: course.title,
+            description: course.description!,
+          },
+          unit_amount: course.price!,
+        },
+      },
+    ];
+
+    let customer = await this.stripeCustomerRepository.getStripeCustomer(userId);
+
+    const stripeInstance = stripe(c);
+
+    if (!customer) {
+      const stripeCustomer = await stripeInstance.customers.create({
+        email: emailAddresses,
+      });
+
+      customer = await this.stripeCustomerRepository.registerStripeCustomer(
+        userId,
+        stripeCustomer.id,
+      );
+    }
+
+    const session = await stripeInstance.checkout.sessions.create({
+      customer: customer.stripeCustomerId,
+      line_items,
+      mode: "payment",
+      success_url: `${c.env.NEXT_PUBLIC_APP_URL}/courses/${course.id}?success=1`,
+      cancel_url: `${c.env.NEXT_PUBLIC_APP_URL}/courses/${course.id}?canceled=1`,
+      metadata: {
+        courseId: course.id,
+        userId: userId,
+      },
+    });
+    return session.url;
   }
 }

@@ -13,6 +13,7 @@ import { HandleError } from "../../error/HandleError";
 import { CategoryNotFoundError } from "../../error/CategoryNotFoundError";
 import { validateAuth } from "../../auth/validateAuth";
 import { CourseRequiredFieldsEmptyError } from "../../error/CourseRequiredFieldsEmptyError";
+import { PurchaseAlreadyExistsError } from "../../error/PurchaseAlreadyExistsError";
 
 const Course = new Hono<{ Bindings: Env }>();
 
@@ -55,6 +56,26 @@ Course.get(
       return c.json(courses);
     } catch (error) {
       return HandleError(c, error, "公開講座一覧取得エラー");
+    }
+  },
+);
+
+/**
+ * 公開講座取得API
+ */
+Course.get(
+  "/:course_id/publish",
+  validateAuth,
+  zValidator("param", z.object({ course_id: z.string() })),
+  async (c) => {
+    const { course_id: courseId } = c.req.valid("param");
+    const db = getDbConnection(c.env.DATABASE_URL);
+    const courseUseCase = new CourseUseCase(db);
+    try {
+      const course = await courseUseCase.getPublishCourse(courseId);
+      return c.json(course);
+    } catch (error) {
+      return HandleError(c, error, "公開講座取得エラー");
     }
   },
 );
@@ -325,6 +346,34 @@ Course.delete(
         return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
       }
       return HandleError(c, error, "講座物理削除エラー");
+    }
+  },
+);
+
+/**
+ * 講座購入API
+ */
+Course.post(
+  "/:course_id/checkout",
+  validateAuth,
+  zValidator("param", z.object({ course_id: z.string() })),
+  async (c) => {
+    try {
+      const auth = getAuth(c);
+      const emailAddress = (await c.get("clerk").users.getUser(auth!.userId!)).emailAddresses[0]
+        .emailAddress;
+      const { course_id: courseId } = c.req.valid("param");
+      const db = getDbConnection(c.env.DATABASE_URL);
+      const courseUseCase = new CourseUseCase(db);
+      const url = await courseUseCase.checkoutCourse(courseId, auth!.userId!, emailAddress, c);
+      return c.json({ url: url });
+    } catch (error) {
+      if (error instanceof CourseNotFoundError) {
+        return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
+      } else if (error instanceof PurchaseAlreadyExistsError) {
+        return c.json({ error: Messages.MSG_ERR_005 }, 400);
+      }
+      return HandleError(c, error, "講座購入エラー");
     }
   },
 );
