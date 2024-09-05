@@ -5,7 +5,7 @@ import { z } from "zod";
 
 export const category = pgTable("category", {
   id: text("id").primaryKey(),
-  name: text("name"),
+  name: text("name").notNull(),
 });
 
 export const course = pgTable("course", {
