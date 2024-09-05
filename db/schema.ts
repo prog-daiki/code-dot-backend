@@ -22,17 +22,6 @@ export const course = pgTable("course", {
   updateDate: timestamp("update_date", { mode: "date" }).notNull(),
 });
 
-export const attachment = pgTable("attachment", {
-  id: text("id").primaryKey(),
-  name: text("name"),
-  url: text("url"),
-  courseId: text("course_id").references(() => course.id, {
-    onDelete: "cascade",
-  }),
-  createDate: timestamp("create_date", { mode: "date" }).notNull(),
-  updateDate: timestamp("update_date", { mode: "date" }).notNull(),
-});
-
 export const chapter = pgTable("chapter", {
   id: text("id").primaryKey(),
   title: text("title").notNull(),
@@ -86,19 +75,11 @@ export const stripeCustomer = pgTable("stripe_customer", {
 
 export const courseRelations = relations(course, ({ many }) => ({
   categories: many(category),
-  attachments: many(attachment),
   chapters: many(chapter),
 }));
 
 export const categoriesRelations = relations(category, ({ many }) => ({
   courses: many(course),
-}));
-
-export const attachmentsRelations = relations(attachment, ({ one }) => ({
-  course: one(course, {
-    fields: [attachment.courseId],
-    references: [course.id],
-  }),
 }));
 
 export const chaptersRelations = relations(chapter, ({ one }) => ({
