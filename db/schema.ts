@@ -14,22 +14,10 @@ export const course = pgTable("course", {
   description: text("description"),
   imageUrl: text("image_url"),
   price: integer("price"),
-  userId: text("user_id").notNull(),
+  sourceUrl: text("source_url"),
   publishFlag: boolean("publish_flag").default(false),
-  deleteFlag: boolean("delete_flag").default(false),
   categoryId: text("category_id").references(() => category.id, {
     onDelete: "set null",
-  }),
-  createDate: timestamp("create_date", { mode: "date" }).notNull(),
-  updateDate: timestamp("update_date", { mode: "date" }).notNull(),
-});
-
-export const attachment = pgTable("attachment", {
-  id: text("id").primaryKey(),
-  name: text("name"),
-  url: text("url"),
-  courseId: text("course_id").references(() => course.id, {
-    onDelete: "cascade",
   }),
   createDate: timestamp("create_date", { mode: "date" }).notNull(),
   updateDate: timestamp("update_date", { mode: "date" }).notNull(),
@@ -69,15 +57,6 @@ export const purchase = pgTable("purchase", {
   updateDate: timestamp("update_date", { mode: "date" }).notNull(),
 });
 
-export const purchaseHistory = pgTable("purchase_history", {
-  id: text("id").primaryKey(),
-  courseId: text("course_id").references(() => course.id),
-  courseTitle: text("course_title"),
-  userId: text("user_id"),
-  createDate: timestamp("create_date", { mode: "date" }).notNull(),
-  updateDate: timestamp("update_date", { mode: "date" }).notNull(),
-});
-
 export const stripeCustomer = pgTable("stripe_customer", {
   id: text("id").primaryKey(),
   userId: text("user_id").notNull(),
@@ -88,19 +67,11 @@ export const stripeCustomer = pgTable("stripe_customer", {
 
 export const courseRelations = relations(course, ({ many }) => ({
   categories: many(category),
-  attachments: many(attachment),
   chapters: many(chapter),
 }));
 
 export const categoriesRelations = relations(category, ({ many }) => ({
   courses: many(course),
-}));
-
-export const attachmentsRelations = relations(attachment, ({ one }) => ({
-  course: one(course, {
-    fields: [attachment.courseId],
-    references: [course.id],
-  }),
 }));
 
 export const chaptersRelations = relations(chapter, ({ one }) => ({
