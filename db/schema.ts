@@ -59,6 +59,33 @@ export const muxData = pgTable("mux_data", {
   }),
 });
 
+export const purchase = pgTable("purchase", {
+  id: text("id").primaryKey(),
+  courseId: text("course_id").references(() => course.id, {
+    onDelete: "cascade",
+  }),
+  userId: text("user_id"),
+  createDate: timestamp("create_date", { mode: "date" }).notNull(),
+  updateDate: timestamp("update_date", { mode: "date" }).notNull(),
+});
+
+export const purchaseHistory = pgTable("purchase_history", {
+  id: text("id").primaryKey(),
+  courseId: text("course_id").references(() => course.id),
+  courseTitle: text("course_title"),
+  userId: text("user_id"),
+  createDate: timestamp("create_date", { mode: "date" }).notNull(),
+  updateDate: timestamp("update_date", { mode: "date" }).notNull(),
+});
+
+export const stripeCustomer = pgTable("stripe_customer", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  stripeCustomerId: text("stripe_customer_id").notNull(),
+  createDate: timestamp("create_date", { mode: "date" }).notNull(),
+  updateDate: timestamp("update_date", { mode: "date" }).notNull(),
+});
+
 export const courseRelations = relations(course, ({ many }) => ({
   categories: many(category),
   attachments: many(attachment),
@@ -87,6 +114,13 @@ export const muxDataRelations = relations(muxData, ({ one }) => ({
   chapter: one(chapter, {
     fields: [muxData.chapterId],
     references: [chapter.id],
+  }),
+}));
+
+export const purchaseRelations = relations(purchase, ({ one }) => ({
+  course: one(course, {
+    fields: [purchase.courseId],
+    references: [course.id],
   }),
 }));
 
