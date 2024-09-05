@@ -1,0 +1,1 @@
+ALTER TABLE "course" DROP COLUMN IF EXISTS "delete_flag";

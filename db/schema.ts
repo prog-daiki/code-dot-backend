@@ -14,9 +14,7 @@ export const course = pgTable("course", {
   description: text("description"),
   imageUrl: text("image_url"),
   price: integer("price"),
-  userId: text("user_id").notNull(),
   publishFlag: boolean("publish_flag").default(false),
-  deleteFlag: boolean("delete_flag").default(false),
   categoryId: text("category_id").references(() => category.id, {
     onDelete: "set null",
   }),
