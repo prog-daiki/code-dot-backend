@@ -91,8 +91,8 @@ export class CourseUseCase {
    * @param userId ユーザーID
    * @returns 講座
    */
-  async registerCourse(title: string, userId: string) {
-    const course = await this.courseRepository.registerCourse({ title }, userId);
+  async registerCourse(title: string) {
+    const course = await this.courseRepository.registerCourse({ title });
     return course;
   }
 
