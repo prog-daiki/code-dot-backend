@@ -36,7 +36,7 @@ export class CourseRepository {
    * @returns
    */
   async getCourses() {
-    const data = await this.db.select().from(course).orderBy(desc(course.updateDate));
+    const data = await this.db.select().from(course).orderBy(desc(course.createDate));
     return data;
   }
 

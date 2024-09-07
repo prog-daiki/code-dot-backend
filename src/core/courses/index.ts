@@ -15,14 +15,25 @@ import { validateAuth } from "../../auth/validateAuth";
 import { CourseRequiredFieldsEmptyError } from "../../error/CourseRequiredFieldsEmptyError";
 import { PurchaseAlreadyExistsError } from "../../error/PurchaseAlreadyExistsError";
 
-const Course = new Hono<{ Bindings: Env }>();
+const Course = new Hono<{
+  Bindings: Env;
+  Variables: {
+    db: ReturnType<typeof getDbConnection>;
+    courseUseCase: CourseUseCase;
+  };
+}>();
+Course.use("*", async (c, next) => {
+  const db = getDbConnection(c.env.DATABASE_URL);
+  c.set("db", db);
+  c.set("courseUseCase", new CourseUseCase(db));
+  await next();
+});
 
 /**
  * 講座一覧取得API
  */
 Course.get("/", validateAdmin, async (c) => {
-  const db = getDbConnection(c.env.DATABASE_URL);
-  const courseUseCase = new CourseUseCase(db);
+  const courseUseCase = c.get("courseUseCase");
   try {
     const courses = await courseUseCase.getCourses();
     return c.json(courses);
