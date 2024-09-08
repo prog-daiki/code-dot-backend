@@ -1,0 +1,1 @@
+ALTER TABLE "chapter" DROP COLUMN IF EXISTS "free_flag";

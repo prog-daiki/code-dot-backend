@@ -91,7 +91,6 @@ export class CourseRepository {
               'description', ${chapter.description},
               'position', ${chapter.position},
               'isPublished', ${chapter.publishFlag},
-              'isFree', ${chapter.freeFlag},
               'muxData', json_build_object(
                 'id', ${muxData.id},
                 'assetId', ${muxData.assetId},
