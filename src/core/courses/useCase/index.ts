@@ -25,12 +25,14 @@ export class CourseUseCase {
   private categoryRepository: CategoryRepository;
   private purchaseRepository: PurchaseRepository;
   private stripeCustomerRepository: StripeCustomerRepository;
+  private chapterRepository: ChapterRepository;
 
   constructor(private db: PostgresJsDatabase<typeof schema>) {
     this.courseRepository = new CourseRepository(this.db);
     this.categoryRepository = new CategoryRepository(this.db);
     this.purchaseRepository = new PurchaseRepository(this.db);
     this.stripeCustomerRepository = new StripeCustomerRepository(this.db);
+    this.chapterRepository = new ChapterRepository(this.db);
   }
 
   /**
@@ -210,16 +212,17 @@ export class CourseUseCase {
    * @returns 講座
    */
   async publishCourse(courseId: string) {
-    const courseRepository = new CourseRepository(this.db);
-    const chapterRepository = new ChapterRepository(this.db);
-
-    const existsCourse = await courseRepository.checkCourseExists(courseId);
+    // 講座の存在チェック
+    const existsCourse = await this.courseRepository.checkCourseExists(courseId);
     if (!existsCourse) {
       throw new CourseNotFoundError();
     }
 
-    const course = await courseRepository.getCourse(courseId);
-    const publishChapters = await chapterRepository.getPublishChapters(courseId);
+    // 講座と公開されているチャプターを取得する
+    const course = await this.courseRepository.getCourse(courseId);
+    const publishChapters = await this.chapterRepository.getPublishChapters(courseId);
+
+    // 講座の必須項目を満たしているかチェック
     if (
       publishChapters.length === 0 ||
       !course.title ||
@@ -231,7 +234,7 @@ export class CourseUseCase {
       throw new CourseRequiredFieldsEmptyError();
     }
 
-    const updatedCourse = await courseRepository.updateCourse(courseId, {
+    const updatedCourse = await this.courseRepository.updateCourse(courseId, {
       publishFlag: true,
     });
     return updatedCourse;
