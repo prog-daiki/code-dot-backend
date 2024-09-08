@@ -26,6 +26,7 @@ export class CourseUseCase {
   private purchaseRepository: PurchaseRepository;
   private stripeCustomerRepository: StripeCustomerRepository;
   private chapterRepository: ChapterRepository;
+  private muxRepository: MuxDataRepository;
 
   constructor(private db: PostgresJsDatabase<typeof schema>) {
     this.courseRepository = new CourseRepository(this.db);
@@ -33,6 +34,7 @@ export class CourseUseCase {
     this.purchaseRepository = new PurchaseRepository(this.db);
     this.stripeCustomerRepository = new StripeCustomerRepository(this.db);
     this.chapterRepository = new ChapterRepository(this.db);
+    this.muxRepository = new MuxDataRepository(this.db);
   }
 
   /**
@@ -241,28 +243,30 @@ export class CourseUseCase {
   }
 
   /**
-   * 講座を物理削除する
+   * 講座を削除する
    * @param courseId 講座ID
    * @param c コンテキスト
    */
-  async hardDeleteCourse(courseId: string, c: Context) {
-    const courseRepository = new CourseRepository(this.db);
-    const muxRepository = new MuxDataRepository(this.db);
-    const existsCourse = await courseRepository.checkCourseExists(courseId);
+  async deleteCourse(courseId: string, c: Context) {
+    // 講座の存在チェック
+    const existsCourse = await this.courseRepository.checkCourseExists(courseId);
     if (!existsCourse) {
       throw new CourseNotFoundError();
     }
+
+    // Muxの講座に関連するデータを削除する
     const { video } = new Mux({
       tokenId: c.env.MUX_TOKEN_ID!,
       tokenSecret: c.env.MUX_TOKEN_SECRET!,
     });
-    const muxDataList = await muxRepository.getMuxDataByCourseId(courseId);
+    const muxDataList = await this.muxRepository.getMuxDataByCourseId(courseId);
     if (muxDataList.length > 0) {
       for (const muxData of muxDataList) {
         await video.assets.delete(muxData.muxData.assetId);
       }
     }
-    const course = await courseRepository.deleteCourse(courseId);
+
+    const course = await this.courseRepository.deleteCourse(courseId);
     return course;
   }
 
