@@ -266,11 +266,10 @@ Course.put(
   validateAdmin,
   zValidator("param", z.object({ course_id: z.string() })),
   async (c) => {
+    const { course_id: courseId } = c.req.valid("param");
+    const courseUseCase = c.get("courseUseCase");
     try {
-      const { course_id: courseId } = c.req.valid("param");
-      const db = getDbConnection(c.env.DATABASE_URL);
-      const courseUseCase = new CourseUseCase(db);
-      const course = await courseUseCase.unpublishCourse(courseId, c);
+      const course = await courseUseCase.unpublishCourse(courseId);
       return c.json(course);
     } catch (error) {
       if (error instanceof CourseNotFoundError) {

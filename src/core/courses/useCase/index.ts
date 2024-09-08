@@ -195,7 +195,7 @@ export class CourseUseCase {
    * @param c コンテキスト
    * @returns 講座
    */
-  async unpublishCourse(courseId: string, c: Context) {
+  async unpublishCourse(courseId: string) {
     // 講座の存在チェック
     const existsCourse = await this.courseRepository.checkCourseExists(courseId);
     if (!existsCourse) {
