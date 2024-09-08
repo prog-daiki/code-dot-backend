@@ -259,29 +259,6 @@ Course.put(
 );
 
 /**
- * 講座論理削除API
- */
-Course.put(
-  "/:course_id/delete",
-  validateAdmin,
-  zValidator("param", z.object({ course_id: z.string() })),
-  async (c) => {
-    try {
-      const { course_id: courseId } = c.req.valid("param");
-      const db = getDbConnection(c.env.DATABASE_URL);
-      const courseUseCase = new CourseUseCase(db);
-      const course = await courseUseCase.softDeleteCourse(courseId, c);
-      return c.json(course);
-    } catch (error) {
-      if (error instanceof CourseNotFoundError) {
-        return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
-      }
-      return HandleError(c, error, "講座論理削除エラー");
-    }
-  },
-);
-
-/**
  * 講座非公開API
  */
 Course.put(

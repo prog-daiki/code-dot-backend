@@ -188,25 +188,6 @@ export class CourseUseCase {
   }
 
   /**
-   * 講座を論理削除する
-   * @param courseId 講座ID
-   * @param c コンテキスト
-   * @returns 講座
-   */
-  async softDeleteCourse(courseId: string, c: Context) {
-    const courseRepository = new CourseRepository(this.db);
-    const existsCourse = await courseRepository.checkCourseExists(courseId);
-    if (!existsCourse) {
-      throw new CourseNotFoundError();
-    }
-    const course = await courseRepository.updateCourse(courseId, {
-      deleteFlag: true,
-      publishFlag: false,
-    });
-    return course;
-  }
-
-  /**
    * 講座を非公開にする
    * @param courseId 講座ID
    * @param c コンテキスト
