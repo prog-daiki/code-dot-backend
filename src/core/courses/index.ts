@@ -92,7 +92,7 @@ Course.get(
 );
 
 /**
- * 講座取得API（管理者）
+ * 講座取得API
  */
 Course.get(
   "/:course_id",
