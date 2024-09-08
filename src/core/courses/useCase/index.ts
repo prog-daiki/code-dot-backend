@@ -25,12 +25,16 @@ export class CourseUseCase {
   private categoryRepository: CategoryRepository;
   private purchaseRepository: PurchaseRepository;
   private stripeCustomerRepository: StripeCustomerRepository;
+  private chapterRepository: ChapterRepository;
+  private muxRepository: MuxDataRepository;
 
   constructor(private db: PostgresJsDatabase<typeof schema>) {
     this.courseRepository = new CourseRepository(this.db);
     this.categoryRepository = new CategoryRepository(this.db);
     this.purchaseRepository = new PurchaseRepository(this.db);
     this.stripeCustomerRepository = new StripeCustomerRepository(this.db);
+    this.chapterRepository = new ChapterRepository(this.db);
+    this.muxRepository = new MuxDataRepository(this.db);
   }
 
   /**
@@ -188,31 +192,12 @@ export class CourseUseCase {
   }
 
   /**
-   * 講座を論理削除する
-   * @param courseId 講座ID
-   * @param c コンテキスト
-   * @returns 講座
-   */
-  async softDeleteCourse(courseId: string, c: Context) {
-    const courseRepository = new CourseRepository(this.db);
-    const existsCourse = await courseRepository.checkCourseExists(courseId);
-    if (!existsCourse) {
-      throw new CourseNotFoundError();
-    }
-    const course = await courseRepository.updateCourse(courseId, {
-      deleteFlag: true,
-      publishFlag: false,
-    });
-    return course;
-  }
-
-  /**
    * 講座を非公開にする
    * @param courseId 講座ID
    * @param c コンテキスト
    * @returns 講座
    */
-  async unpublishCourse(courseId: string, c: Context) {
+  async unpublishCourse(courseId: string) {
     // 講座の存在チェック
     const existsCourse = await this.courseRepository.checkCourseExists(courseId);
     if (!existsCourse) {
@@ -229,16 +214,17 @@ export class CourseUseCase {
    * @returns 講座
    */
   async publishCourse(courseId: string) {
-    const courseRepository = new CourseRepository(this.db);
-    const chapterRepository = new ChapterRepository(this.db);
-
-    const existsCourse = await courseRepository.checkCourseExists(courseId);
+    // 講座の存在チェック
+    const existsCourse = await this.courseRepository.checkCourseExists(courseId);
     if (!existsCourse) {
       throw new CourseNotFoundError();
     }
 
-    const course = await courseRepository.getCourse(courseId);
-    const publishChapters = await chapterRepository.getPublishChapters(courseId);
+    // 講座と公開されているチャプターを取得する
+    const course = await this.courseRepository.getCourse(courseId);
+    const publishChapters = await this.chapterRepository.getPublishChapters(courseId);
+
+    // 講座の必須項目を満たしているかチェック
     if (
       publishChapters.length === 0 ||
       !course.title ||
@@ -250,35 +236,37 @@ export class CourseUseCase {
       throw new CourseRequiredFieldsEmptyError();
     }
 
-    const updatedCourse = await courseRepository.updateCourse(courseId, {
+    const updatedCourse = await this.courseRepository.updateCourse(courseId, {
       publishFlag: true,
     });
     return updatedCourse;
   }
 
   /**
-   * 講座を物理削除する
+   * 講座を削除する
    * @param courseId 講座ID
    * @param c コンテキスト
    */
-  async hardDeleteCourse(courseId: string, c: Context) {
-    const courseRepository = new CourseRepository(this.db);
-    const muxRepository = new MuxDataRepository(this.db);
-    const existsCourse = await courseRepository.checkCourseExists(courseId);
+  async deleteCourse(courseId: string, c: Context) {
+    // 講座の存在チェック
+    const existsCourse = await this.courseRepository.checkCourseExists(courseId);
     if (!existsCourse) {
       throw new CourseNotFoundError();
     }
+
+    // Muxの講座に関連するデータを削除する
     const { video } = new Mux({
       tokenId: c.env.MUX_TOKEN_ID!,
       tokenSecret: c.env.MUX_TOKEN_SECRET!,
     });
-    const muxDataList = await muxRepository.getMuxDataByCourseId(courseId);
+    const muxDataList = await this.muxRepository.getMuxDataByCourseId(courseId);
     if (muxDataList.length > 0) {
       for (const muxData of muxDataList) {
         await video.assets.delete(muxData.muxData.assetId);
       }
     }
-    const course = await courseRepository.deleteCourse(courseId);
+
+    const course = await this.courseRepository.deleteCourse(courseId);
     return course;
   }
 

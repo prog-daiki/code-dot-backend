@@ -92,7 +92,7 @@ Course.get(
 );
 
 /**
- * 講座取得API（管理者）
+ * 講座取得API
  */
 Course.get(
   "/:course_id",
@@ -165,11 +165,10 @@ Course.put(
   zValidator("json", insertCourseSchema.pick({ description: true })),
   zValidator("param", z.object({ course_id: z.string() })),
   async (c) => {
+    const validatedData = c.req.valid("json");
+    const { course_id: courseId } = c.req.valid("param");
+    const courseUseCase = c.get("courseUseCase");
     try {
-      const validatedData = c.req.valid("json");
-      const { course_id: courseId } = c.req.valid("param");
-      const db = getDbConnection(c.env.DATABASE_URL);
-      const courseUseCase = new CourseUseCase(db);
       const course = await courseUseCase.updateCourseDescription(
         courseId,
         validatedData.description,
@@ -193,11 +192,10 @@ Course.put(
   zValidator("json", insertCourseSchema.pick({ imageUrl: true })),
   zValidator("param", z.object({ course_id: z.string() })),
   async (c) => {
+    const validatedData = c.req.valid("json");
+    const { course_id: courseId } = c.req.valid("param");
+    const courseUseCase = c.get("courseUseCase");
     try {
-      const validatedData = c.req.valid("json");
-      const { course_id: courseId } = c.req.valid("param");
-      const db = getDbConnection(c.env.DATABASE_URL);
-      const courseUseCase = new CourseUseCase(db);
       const course = await courseUseCase.updateCourseThumbnail(courseId, validatedData.imageUrl);
       return c.json(course);
     } catch (error) {
@@ -218,11 +216,10 @@ Course.put(
   zValidator("json", insertCourseSchema.pick({ categoryId: true })),
   zValidator("param", z.object({ course_id: z.string() })),
   async (c) => {
+    const validatedData = c.req.valid("json");
+    const { course_id: courseId } = c.req.valid("param");
+    const courseUseCase = c.get("courseUseCase");
     try {
-      const validatedData = c.req.valid("json");
-      const { course_id: courseId } = c.req.valid("param");
-      const db = getDbConnection(c.env.DATABASE_URL);
-      const courseUseCase = new CourseUseCase(db);
       const course = await courseUseCase.updateCourseCategory(courseId, validatedData.categoryId);
       return c.json(course);
     } catch (error) {
@@ -246,11 +243,10 @@ Course.put(
   zValidator("json", insertCourseSchema.pick({ price: true })),
   zValidator("param", z.object({ course_id: z.string() })),
   async (c) => {
+    const validatedData = c.req.valid("json");
+    const { course_id: courseId } = c.req.valid("param");
+    const courseUseCase = c.get("courseUseCase");
     try {
-      const validatedData = c.req.valid("json");
-      const { course_id: courseId } = c.req.valid("param");
-      const db = getDbConnection(c.env.DATABASE_URL);
-      const courseUseCase = new CourseUseCase(db);
       const course = await courseUseCase.updateCoursePrice(courseId, validatedData.price);
       return c.json(course);
     } catch (error) {
@@ -263,29 +259,6 @@ Course.put(
 );
 
 /**
- * 講座論理削除API
- */
-Course.put(
-  "/:course_id/delete",
-  validateAdmin,
-  zValidator("param", z.object({ course_id: z.string() })),
-  async (c) => {
-    try {
-      const { course_id: courseId } = c.req.valid("param");
-      const db = getDbConnection(c.env.DATABASE_URL);
-      const courseUseCase = new CourseUseCase(db);
-      const course = await courseUseCase.softDeleteCourse(courseId, c);
-      return c.json(course);
-    } catch (error) {
-      if (error instanceof CourseNotFoundError) {
-        return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
-      }
-      return HandleError(c, error, "講座論理削除エラー");
-    }
-  },
-);
-
-/**
  * 講座非公開API
  */
 Course.put(
@@ -293,11 +266,10 @@ Course.put(
   validateAdmin,
   zValidator("param", z.object({ course_id: z.string() })),
   async (c) => {
+    const { course_id: courseId } = c.req.valid("param");
+    const courseUseCase = c.get("courseUseCase");
     try {
-      const { course_id: courseId } = c.req.valid("param");
-      const db = getDbConnection(c.env.DATABASE_URL);
-      const courseUseCase = new CourseUseCase(db);
-      const course = await courseUseCase.unpublishCourse(courseId, c);
+      const course = await courseUseCase.unpublishCourse(courseId);
       return c.json(course);
     } catch (error) {
       if (error instanceof CourseNotFoundError) {
@@ -316,10 +288,9 @@ Course.put(
   validateAdmin,
   zValidator("param", z.object({ course_id: z.string() })),
   async (c) => {
+    const { course_id: courseId } = c.req.valid("param");
+    const courseUseCase = c.get("courseUseCase");
     try {
-      const { course_id: courseId } = c.req.valid("param");
-      const db = getDbConnection(c.env.DATABASE_URL);
-      const courseUseCase = new CourseUseCase(db);
       const course = await courseUseCase.publishCourse(courseId);
       return c.json(course);
     } catch (error) {
@@ -335,24 +306,23 @@ Course.put(
 );
 
 /**
- * 講座物理削除API
+ * 講座削除API
  */
 Course.delete(
   "/:course_id",
   validateAdmin,
   zValidator("param", z.object({ course_id: z.string() })),
   async (c) => {
+    const { course_id: courseId } = c.req.valid("param");
+    const courseUseCase = c.get("courseUseCase");
     try {
-      const { course_id: courseId } = c.req.valid("param");
-      const db = getDbConnection(c.env.DATABASE_URL);
-      const courseUseCase = new CourseUseCase(db);
-      const course = await courseUseCase.hardDeleteCourse(courseId, c);
+      const course = await courseUseCase.deleteCourse(courseId, c);
       return c.json(course);
     } catch (error) {
       if (error instanceof CourseNotFoundError) {
         return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
       }
-      return HandleError(c, error, "講座物理削除エラー");
+      return HandleError(c, error, "講座削除エラー");
     }
   },
 );

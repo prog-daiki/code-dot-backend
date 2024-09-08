@@ -11,15 +11,26 @@ import { HandleError } from "../../error/HandleError";
 import { validateAdmin } from "../../auth/validateAdmin";
 import { CategoryNotFoundError } from "../../error/CategoryNotFoundError";
 
-const Category = new Hono<{ Bindings: Env }>();
+const Category = new Hono<{
+  Bindings: Env;
+  Variables: {
+    db: ReturnType<typeof getDbConnection>;
+    categoryUseCase: CategoryUseCase;
+  };
+}>();
+Category.use("*", async (c, next) => {
+  const db = getDbConnection(c.env.DATABASE_URL);
+  c.set("db", db);
+  c.set("categoryUseCase", new CategoryUseCase(db));
+  await next();
+});
 
 /**
  * カテゴリー一覧取得API
  */
 Category.get("/", validateAuth, async (c) => {
+  const categoryUseCase = c.get("categoryUseCase");
   try {
-    const db = getDbConnection(c.env.DATABASE_URL);
-    const categoryUseCase = new CategoryUseCase(db);
     const categories = await categoryUseCase.getCategories();
     return c.json(categories);
   } catch (error) {
@@ -35,10 +46,9 @@ Category.post(
   validateAdmin,
   zValidator("json", insertCategorySchema.pick({ name: true })),
   async (c) => {
+    const validatedData = c.req.valid("json");
+    const categoryUseCase = c.get("categoryUseCase");
     try {
-      const validatedData = c.req.valid("json");
-      const db = getDbConnection(c.env.DATABASE_URL);
-      const categoryUseCase = new CategoryUseCase(db);
       const category = await categoryUseCase.registerCategory(validatedData.name);
       return c.json(category);
     } catch (error) {
