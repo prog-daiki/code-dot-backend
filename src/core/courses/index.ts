@@ -143,8 +143,7 @@ Course.put(
   async (c) => {
     const validatedData = c.req.valid("json");
     const { course_id: courseId } = c.req.valid("param");
-    const db = getDbConnection(c.env.DATABASE_URL);
-    const courseUseCase = new CourseUseCase(db);
+    const courseUseCase = c.get("courseUseCase");
     try {
       const course = await courseUseCase.updateCourseTitle(courseId, validatedData.title);
       return c.json(course);
