@@ -46,10 +46,9 @@ Category.post(
   validateAdmin,
   zValidator("json", insertCategorySchema.pick({ name: true })),
   async (c) => {
+    const validatedData = c.req.valid("json");
+    const categoryUseCase = c.get("categoryUseCase");
     try {
-      const validatedData = c.req.valid("json");
-      const db = getDbConnection(c.env.DATABASE_URL);
-      const categoryUseCase = new CategoryUseCase(db);
       const category = await categoryUseCase.registerCategory(validatedData.name);
       return c.json(category);
     } catch (error) {
