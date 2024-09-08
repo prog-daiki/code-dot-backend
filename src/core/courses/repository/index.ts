@@ -36,7 +36,7 @@ export class CourseRepository {
    * @returns
    */
   async getCourses() {
-    const data = await this.db.select().from(course).orderBy(desc(course.updateDate));
+    const data = await this.db.select().from(course).orderBy(desc(course.createDate));
     return data;
   }
 
@@ -119,7 +119,7 @@ export class CourseRepository {
    * @param userId
    * @returns
    */
-  async registerCourse(values: Pick<typeof course.$inferInsert, "title">, userId: string) {
+  async registerCourse(values: Pick<typeof course.$inferInsert, "title">) {
     const currentJstDate = getJstDate();
     const [data] = await this.db
       .insert(course)
@@ -128,7 +128,6 @@ export class CourseRepository {
         ...values,
         createDate: currentJstDate,
         updateDate: currentJstDate,
-        userId,
       })
       .returning();
     return data;

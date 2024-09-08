@@ -15,14 +15,25 @@ import { validateAuth } from "../../auth/validateAuth";
 import { CourseRequiredFieldsEmptyError } from "../../error/CourseRequiredFieldsEmptyError";
 import { PurchaseAlreadyExistsError } from "../../error/PurchaseAlreadyExistsError";
 
-const Course = new Hono<{ Bindings: Env }>();
+const Course = new Hono<{
+  Bindings: Env;
+  Variables: {
+    db: ReturnType<typeof getDbConnection>;
+    courseUseCase: CourseUseCase;
+  };
+}>();
+Course.use("*", async (c, next) => {
+  const db = getDbConnection(c.env.DATABASE_URL);
+  c.set("db", db);
+  c.set("courseUseCase", new CourseUseCase(db));
+  await next();
+});
 
 /**
  * 講座一覧取得API
  */
 Course.get("/", validateAdmin, async (c) => {
-  const db = getDbConnection(c.env.DATABASE_URL);
-  const courseUseCase = new CourseUseCase(db);
+  const courseUseCase = c.get("courseUseCase");
   try {
     const courses = await courseUseCase.getCourses();
     return c.json(courses);
@@ -89,8 +100,7 @@ Course.get(
   zValidator("param", z.object({ course_id: z.string() })),
   async (c) => {
     const { course_id: courseId } = c.req.valid("param");
-    const db = getDbConnection(c.env.DATABASE_URL);
-    const courseUseCase = new CourseUseCase(db);
+    const courseUseCase = c.get("courseUseCase");
     try {
       const course = await courseUseCase.getCourse(courseId);
       return c.json(course);
@@ -111,12 +121,10 @@ Course.post(
   validateAdmin,
   zValidator("json", insertCourseSchema.pick({ title: true })),
   async (c) => {
-    const auth = getAuth(c);
     const validatedData = c.req.valid("json");
-    const db = getDbConnection(c.env.DATABASE_URL);
-    const courseUseCase = new CourseUseCase(db);
+    const courseUseCase = c.get("courseUseCase");
     try {
-      const course = await courseUseCase.registerCourse(validatedData.title, auth!.userId!);
+      const course = await courseUseCase.registerCourse(validatedData.title);
       return c.json(course);
     } catch (error) {
       return HandleError(c, error, "講座登録エラー");
@@ -135,8 +143,7 @@ Course.put(
   async (c) => {
     const validatedData = c.req.valid("json");
     const { course_id: courseId } = c.req.valid("param");
-    const db = getDbConnection(c.env.DATABASE_URL);
-    const courseUseCase = new CourseUseCase(db);
+    const courseUseCase = c.get("courseUseCase");
     try {
       const course = await courseUseCase.updateCourseTitle(courseId, validatedData.title);
       return c.json(course);
