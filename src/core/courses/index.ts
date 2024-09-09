@@ -335,13 +335,12 @@ Course.post(
   validateAuth,
   zValidator("param", z.object({ course_id: z.string() })),
   async (c) => {
+    const auth = getAuth(c);
+    const emailAddress = (await c.get("clerk").users.getUser(auth!.userId!)).emailAddresses[0]
+      .emailAddress;
+    const { course_id: courseId } = c.req.valid("param");
+    const courseUseCase = c.get("courseUseCase");
     try {
-      const auth = getAuth(c);
-      const emailAddress = (await c.get("clerk").users.getUser(auth!.userId!)).emailAddresses[0]
-        .emailAddress;
-      const { course_id: courseId } = c.req.valid("param");
-      const db = getDbConnection(c.env.DATABASE_URL);
-      const courseUseCase = new CourseUseCase(db);
       const url = await courseUseCase.checkoutCourse(courseId, auth!.userId!, emailAddress, c);
       return c.json({ url: url });
     } catch (error) {
