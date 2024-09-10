@@ -84,8 +84,9 @@ Course.get(
     const { course_id: courseId } = c.req.valid("param");
     const db = getDbConnection(c.env.DATABASE_URL);
     const courseUseCase = new CourseUseCase(db);
+    const auth = getAuth(c);
     try {
-      const course = await courseUseCase.getPublishCourse(courseId);
+      const course = await courseUseCase.getPublishCourse(courseId, auth!.userId!);
       return c.json(course);
     } catch (error) {
       if (error instanceof CourseNotFoundError) {

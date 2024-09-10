@@ -62,14 +62,14 @@ export class CourseUseCase {
    * @param courseId 講座ID
    * @returns 公開講座
    */
-  async getPublishCourse(courseId: string) {
+  async getPublishCourse(courseId: string, userId?: string) {
     // 講座の存在チェック
     const existsCourse = await this.courseRepository.checkCourseExists(courseId);
     if (!existsCourse) {
       throw new CourseNotFoundError();
     }
 
-    const course = await this.courseRepository.getPublishCourse(courseId);
+    const course = await this.courseRepository.getPublishCourse(courseId, userId);
     return course;
   }
 

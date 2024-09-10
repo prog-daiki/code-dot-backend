@@ -85,7 +85,7 @@ export class CourseRepository {
    * @param courseId
    * @returns
    */
-  async getPublishCourse(courseId: string) {
+  async getPublishCourse(courseId: string, userId?: string) {
     const [data] = await this.db
       .select({
         course,
@@ -107,15 +107,22 @@ export class CourseRepository {
             ORDER BY ${chapter.position} ASC
           ) filter (where ${chapter.id} is not null)
         `.as("chapters"),
+        purchased: sql<boolean>`case when ${purchase.id} is not null then true else false end`.as(
+          "purchased",
+        ),
       })
       .from(course)
       .leftJoin(chapter, eq(course.id, chapter.courseId))
       .leftJoin(category, eq(course.categoryId, category.id))
       .leftJoin(muxData, eq(chapter.id, muxData.chapterId))
+      .leftJoin(
+        purchase,
+        and(eq(course.id, purchase.courseId), userId ? eq(purchase.userId, userId) : undefined),
+      )
       .where(
         and(eq(course.id, courseId), eq(course.publishFlag, true), eq(chapter.publishFlag, true)),
       )
-      .groupBy(course.id, category.id);
+      .groupBy(course.id, category.id, purchase.id);
     return data;
   }
 
