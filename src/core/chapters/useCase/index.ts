@@ -189,6 +189,8 @@ export class ChapterUseCase {
       test: false,
     });
     await this.muxDataRepository.registerMuxData(chapterId, asset.id, asset.playback_ids![0].id);
+
+    // チャプターの動画を更新する
     const chapter = await this.chapterRepository.updateChapter(chapterId, {
       videoUrl,
     });
