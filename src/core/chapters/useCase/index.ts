@@ -16,10 +16,12 @@ import { ChapterRequiredFieldsEmptyError } from "../../../error/ChapterRequiredF
 export class ChapterUseCase {
   private chapterRepository: ChapterRepository;
   private courseRepository: CourseRepository;
+  private muxDataRepository: MuxDataRepository;
 
   constructor(private db: PostgresJsDatabase<typeof schema>) {
     this.chapterRepository = new ChapterRepository(this.db);
     this.courseRepository = new CourseRepository(this.db);
+    this.muxDataRepository = new MuxDataRepository(this.db);
   }
 
   /**
@@ -220,15 +222,14 @@ export class ChapterUseCase {
    * @param chapterId
    */
   async deleteChapter(courseId: string, chapterId: string, c: Context) {
-    const chapterRepository = new ChapterRepository(this.db);
-    const courseRepository = new CourseRepository(this.db);
-    const muxDataRepository = new MuxDataRepository(this.db);
-
-    const existsCourse = await courseRepository.checkCourseExists(courseId);
+    // 講座の存在チェック
+    const existsCourse = await this.courseRepository.checkCourseExists(courseId);
     if (!existsCourse) {
       throw new CourseNotFoundError();
     }
-    const existsChapter = await chapterRepository.checkChapterExists(chapterId);
+
+    // チャプターの存在チェック
+    const existsChapter = await this.chapterRepository.checkChapterExists(chapterId);
     if (!existsChapter) {
       throw new ChapterNotFoundError();
     }
@@ -237,16 +238,19 @@ export class ChapterUseCase {
       tokenId: c.env.MUX_TOKEN_ID!,
       tokenSecret: c.env.MUX_TOKEN_SECRET!,
     });
-    const existsMuxData = await muxDataRepository.checkMuxDataExists(chapterId);
+
+    // MuxDataの存在チェック
+    const existsMuxData = await this.muxDataRepository.checkMuxDataExists(chapterId);
     if (existsMuxData) {
       await video.assets.delete(existsMuxData.assetId);
-      await muxDataRepository.deleteMuxData(chapterId);
+      await this.muxDataRepository.deleteMuxData(chapterId);
     }
-    const chapter = await chapterRepository.deleteChapter(chapterId);
+    const chapter = await this.chapterRepository.deleteChapter(chapterId);
 
-    const chapters = await chapterRepository.getPublishChapters(courseId);
+    // 講座のチャプターが0件になった場合、講座を非公開にする
+    const chapters = await this.chapterRepository.getPublishChapters(courseId);
     if (chapters.length === 0) {
-      await courseRepository.updateCourse(courseId, {
+      await this.courseRepository.updateCourse(courseId, {
         publishFlag: false,
       });
     }
