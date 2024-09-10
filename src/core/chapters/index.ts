@@ -5,7 +5,6 @@ import { insertChapterSchema } from "../../../db/schema";
 import { Entity, Messages } from "../../sharedInfo/message";
 import { getDbConnection } from "../../../db/drizzle";
 import { z } from "zod";
-import { validateAuth } from "../../auth/validateAuth";
 import { ChapterUseCase } from "./useCase";
 import { HandleError } from "../../error/HandleError";
 import { CourseNotFoundError } from "../../error/CourseNotFoundError";
@@ -14,20 +13,24 @@ import { validateAdmin } from "../../auth/validateAdmin";
 import { ChapterRequiredFieldsEmptyError } from "../../error/ChapterRequiredFieldsEmptyError";
 import { MuxDataNotFoundError } from "../../error/MuxDataNotFoundError";
 
-const Chapter = new Hono<{ Bindings: Env }>();
+const Chapter = new Hono<{
+  Bindings: Env;
+  Variables: {
+    chapterUseCase: ChapterUseCase;
+  };
+}>();
 
 /**
- * チャプター一覧取得API（管理者）
+ * チャプター一覧取得API
  */
 Chapter.get(
   "/",
   validateAdmin,
   zValidator("param", z.object({ course_id: z.string() })),
   async (c) => {
+    const { course_id: courseId } = c.req.valid("param");
+    const chapterUseCase = c.get("chapterUseCase");
     try {
-      const { course_id: courseId } = c.req.valid("param");
-      const db = getDbConnection(c.env.DATABASE_URL);
-      const chapterUseCase = new ChapterUseCase(db);
       const chapters = await chapterUseCase.getChapters(courseId);
       return c.json(chapters);
     } catch (error) {
