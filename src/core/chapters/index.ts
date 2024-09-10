@@ -43,17 +43,16 @@ Chapter.get(
 );
 
 /**
- * チャプター取得API（管理者）
+ * チャプター取得API
  */
 Chapter.get(
   "/:chapter_id",
   validateAdmin,
   zValidator("param", z.object({ course_id: z.string(), chapter_id: z.string() })),
   async (c) => {
+    const { course_id: courseId, chapter_id: chapterId } = c.req.valid("param");
+    const chapterUseCase = c.get("chapterUseCase");
     try {
-      const { course_id: courseId, chapter_id: chapterId } = c.req.valid("param");
-      const db = getDbConnection(c.env.DATABASE_URL);
-      const chapterUseCase = new ChapterUseCase(db);
       const chapter = await chapterUseCase.getChapter(courseId, chapterId);
       return c.json(chapter);
     } catch (error) {
