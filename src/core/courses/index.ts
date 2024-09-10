@@ -86,6 +86,9 @@ Course.get(
       const course = await courseUseCase.getPublishCourse(courseId);
       return c.json(course);
     } catch (error) {
+      if (error instanceof CourseNotFoundError) {
+        return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
+      }
       return HandleError(c, error, "公開講座取得エラー");
     }
   },
