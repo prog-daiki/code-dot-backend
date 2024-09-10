@@ -105,11 +105,10 @@ Chapter.put(
     }),
   ),
   async (c) => {
+    const { list } = c.req.valid("json");
+    const { course_id: courseId } = c.req.valid("param");
+    const chapterUseCase = c.get("chapterUseCase");
     try {
-      const { list } = c.req.valid("json");
-      const { course_id: courseId } = c.req.valid("param");
-      const db = getDbConnection(c.env.DATABASE_URL);
-      const chapterUseCase = new ChapterUseCase(db);
       await chapterUseCase.reorderChapters(courseId, list);
       return c.json({ status: 200 });
     } catch (error) {
