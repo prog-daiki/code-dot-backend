@@ -160,11 +160,10 @@ Chapter.put(
   zValidator("param", z.object({ chapter_id: z.string(), course_id: z.string() })),
   zValidator("json", insertChapterSchema.pick({ description: true })),
   async (c) => {
+    const { course_id: courseId, chapter_id: chapterId } = c.req.valid("param");
+    const validatedData = c.req.valid("json");
+    const chapterUseCase = c.get("chapterUseCase");
     try {
-      const { course_id: courseId, chapter_id: chapterId } = c.req.valid("param");
-      const validatedData = c.req.valid("json");
-      const db = getDbConnection(c.env.DATABASE_URL);
-      const chapterUseCase = new ChapterUseCase(db);
       const chapter = await chapterUseCase.updateChapterDescription(
         validatedData.description,
         courseId,
