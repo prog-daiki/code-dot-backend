@@ -5,6 +5,7 @@ import { clerkMiddleware } from "@hono/clerk-auth";
 import Category from "./core/categories";
 import Chapter from "./core/chapters";
 import Webhook from "./core/webhook";
+import { csrf } from "hono/csrf";
 
 export type Env = {
   DATABASE_URL: string;
@@ -24,6 +25,14 @@ app.use(
     allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization"],
     credentials: true,
+  }),
+);
+
+// CSRF対策を追加
+app.use(
+  "/api/*",
+  csrf({
+    origin: "http://localhost:3000",
   }),
 );
 
