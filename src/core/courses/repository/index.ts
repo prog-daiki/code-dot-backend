@@ -1,6 +1,6 @@
 import { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import * as schema from "../../../../db/schema";
-import { course, chapter, category, muxData } from "../../../../db/schema";
+import { course, chapter, category, muxData, purchase } from "../../../../db/schema";
 import { desc, eq, and, sql, ilike } from "drizzle-orm";
 import { getJstDate } from "../../../sharedInfo/date";
 import { createId } from "@paralleldrive/cuid2";
@@ -46,7 +46,7 @@ export class CourseRepository {
    * @param categoryId
    * @returns
    */
-  async getPublishCourses(title?: string, categoryId?: string) {
+  async getPublishCourses(title?: string, categoryId?: string, userId?: string) {
     const data = await this.db
       .select({
         course,
@@ -56,10 +56,17 @@ export class CourseRepository {
         >`coalesce(json_agg(${chapter}) filter (where ${chapter.id} is not null), '[]')`.as(
           "chapters",
         ),
+        purchased: sql<boolean>`case when ${purchase.id} is not null then true else false end`.as(
+          "purchased",
+        ),
       })
       .from(course)
       .leftJoin(chapter, eq(course.id, chapter.courseId))
       .leftJoin(category, eq(course.categoryId, category.id))
+      .leftJoin(
+        purchase,
+        and(eq(course.id, purchase.courseId), userId ? eq(purchase.userId, userId) : undefined),
+      )
       .where(
         and(
           eq(course.publishFlag, true),
@@ -68,8 +75,8 @@ export class CourseRepository {
           categoryId ? eq(course.categoryId, categoryId) : undefined,
         ),
       )
-      .groupBy(course.id, category.id)
-      .orderBy(desc(course.updateDate));
+      .groupBy(course.id, category.id, purchase.id)
+      .orderBy(desc(course.createDate));
     return data;
   }
 

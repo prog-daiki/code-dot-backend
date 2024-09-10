@@ -52,8 +52,8 @@ export class CourseUseCase {
    * @param categoryId カテゴリーID
    * @returns 公開講座一覧
    */
-  async getPublishCourses(title?: string, categoryId?: string) {
-    const courses = await this.courseRepository.getPublishCourses(title, categoryId);
+  async getPublishCourses(title?: string, categoryId?: string, userId?: string) {
+    const courses = await this.courseRepository.getPublishCourses(title, categoryId, userId);
     return courses;
   }
 

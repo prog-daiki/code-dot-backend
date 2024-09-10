@@ -59,10 +59,12 @@ Course.get(
     const db = getDbConnection(c.env.DATABASE_URL);
     const courseUseCase = new CourseUseCase(db);
     const validatedData = c.req.valid("query");
+    const auth = getAuth(c);
     try {
       const courses = await courseUseCase.getPublishCourses(
         validatedData.title,
         validatedData.categoryId,
+        auth!.userId!,
       );
       return c.json(courses);
     } catch (error) {
