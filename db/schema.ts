@@ -30,7 +30,6 @@ export const chapter = pgTable("chapter", {
   videoUrl: text("video_url"),
   position: integer("position").notNull(),
   publishFlag: boolean("publish_flag").default(false),
-  freeFlag: boolean("free_flag").default(false),
   courseId: text("course_id").references(() => course.id, {
     onDelete: "cascade",
   }),

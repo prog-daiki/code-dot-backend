@@ -16,10 +16,12 @@ import { ChapterRequiredFieldsEmptyError } from "../../../error/ChapterRequiredF
 export class ChapterUseCase {
   private chapterRepository: ChapterRepository;
   private courseRepository: CourseRepository;
+  private muxDataRepository: MuxDataRepository;
 
   constructor(private db: PostgresJsDatabase<typeof schema>) {
     this.chapterRepository = new ChapterRepository(this.db);
     this.courseRepository = new CourseRepository(this.db);
+    this.muxDataRepository = new MuxDataRepository(this.db);
   }
 
   /**
@@ -148,13 +150,14 @@ export class ChapterUseCase {
   }
 
   /**
-   * 講座のチャプターのアクセス権を更新する
-   * @param chapterId
-   * @param freeFlag
+   * 講座のチャプターの動画を更新する
+   * @param videoUrl
    * @param courseId
+   * @param chapterId
+   * @param c
    * @returns
    */
-  async updateChapterAccess(freeFlag: boolean, courseId: string, chapterId: string) {
+  async updateChapterVideo(videoUrl: string, courseId: string, chapterId: string, c: Context) {
     // 講座の存在チェック
     const existsCourse = await this.courseRepository.checkCourseExists(courseId);
     if (!existsCourse) {
@@ -167,48 +170,28 @@ export class ChapterUseCase {
       throw new ChapterNotFoundError();
     }
 
-    const chapter = await this.chapterRepository.updateChapter(chapterId, { freeFlag });
-    return chapter;
-  }
-
-  /**
-   * 講座のチャプターの動画を更新する
-   * @param videoUrl
-   * @param courseId
-   * @param chapterId
-   * @param c
-   * @returns
-   */
-  async updateChapterVideo(videoUrl: string, courseId: string, chapterId: string, c: Context) {
-    const chapterRepository = new ChapterRepository(this.db);
-    const courseRepository = new CourseRepository(this.db);
-    const muxDataRepository = new MuxDataRepository(this.db);
-
-    const existsCourse = await courseRepository.checkCourseExists(courseId);
-    if (!existsCourse) {
-      throw new CourseNotFoundError();
-    }
-    const existsChapter = await chapterRepository.checkChapterExists(chapterId);
-    if (!existsChapter) {
-      throw new ChapterNotFoundError();
-    }
-
     const { video } = new Mux({
       tokenId: c.env.MUX_TOKEN_ID!,
       tokenSecret: c.env.MUX_TOKEN_SECRET!,
     });
-    const existsMuxData = await muxDataRepository.checkMuxDataExists(chapterId);
+
+    // MuxDataの存在チェック
+    const existsMuxData = await this.muxDataRepository.checkMuxDataExists(chapterId);
     if (existsMuxData) {
       await video.assets.delete(existsMuxData.assetId);
-      await muxDataRepository.deleteMuxData(chapterId);
+      await this.muxDataRepository.deleteMuxData(chapterId);
     }
+
+    // MuxDataを登録する
     const asset = await video.assets.create({
       input: videoUrl as any,
       playback_policy: ["public"],
       test: false,
     });
-    await muxDataRepository.registerMuxData(chapterId, asset.id, asset.playback_ids![0].id);
-    const chapter = await chapterRepository.updateChapter(chapterId, {
+    await this.muxDataRepository.registerMuxData(chapterId, asset.id, asset.playback_ids![0].id);
+
+    // チャプターの動画を更新する
+    const chapter = await this.chapterRepository.updateChapter(chapterId, {
       videoUrl,
     });
     return chapter;
@@ -220,15 +203,14 @@ export class ChapterUseCase {
    * @param chapterId
    */
   async deleteChapter(courseId: string, chapterId: string, c: Context) {
-    const chapterRepository = new ChapterRepository(this.db);
-    const courseRepository = new CourseRepository(this.db);
-    const muxDataRepository = new MuxDataRepository(this.db);
-
-    const existsCourse = await courseRepository.checkCourseExists(courseId);
+    // 講座の存在チェック
+    const existsCourse = await this.courseRepository.checkCourseExists(courseId);
     if (!existsCourse) {
       throw new CourseNotFoundError();
     }
-    const existsChapter = await chapterRepository.checkChapterExists(chapterId);
+
+    // チャプターの存在チェック
+    const existsChapter = await this.chapterRepository.checkChapterExists(chapterId);
     if (!existsChapter) {
       throw new ChapterNotFoundError();
     }
@@ -237,16 +219,19 @@ export class ChapterUseCase {
       tokenId: c.env.MUX_TOKEN_ID!,
       tokenSecret: c.env.MUX_TOKEN_SECRET!,
     });
-    const existsMuxData = await muxDataRepository.checkMuxDataExists(chapterId);
+
+    // MuxDataの存在チェック
+    const existsMuxData = await this.muxDataRepository.checkMuxDataExists(chapterId);
     if (existsMuxData) {
       await video.assets.delete(existsMuxData.assetId);
-      await muxDataRepository.deleteMuxData(chapterId);
+      await this.muxDataRepository.deleteMuxData(chapterId);
     }
-    const chapter = await chapterRepository.deleteChapter(chapterId);
+    const chapter = await this.chapterRepository.deleteChapter(chapterId);
 
-    const chapters = await chapterRepository.getPublishChapters(courseId);
+    // 講座のチャプターが0件になった場合、講座を非公開にする
+    const chapters = await this.chapterRepository.getPublishChapters(courseId);
     if (chapters.length === 0) {
-      await courseRepository.updateCourse(courseId, {
+      await this.courseRepository.updateCourse(courseId, {
         publishFlag: false,
       });
     }
@@ -259,22 +244,26 @@ export class ChapterUseCase {
    * @param chapterId
    */
   async unpublishChapter(courseId: string, chapterId: string) {
-    const chapterRepository = new ChapterRepository(this.db);
-    const courseRepository = new CourseRepository(this.db);
-    const existsCourse = await courseRepository.checkCourseExists(courseId);
+    // 講座の存在チェック
+    const existsCourse = await this.courseRepository.checkCourseExists(courseId);
     if (!existsCourse) {
       throw new CourseNotFoundError();
     }
-    const existsChapter = await chapterRepository.checkChapterExists(chapterId);
+
+    // チャプターの存在チェック
+    const existsChapter = await this.chapterRepository.checkChapterExists(chapterId);
     if (!existsChapter) {
       throw new ChapterNotFoundError();
     }
-    const chapter = await chapterRepository.updateChapter(chapterId, {
+
+    const chapter = await this.chapterRepository.updateChapter(chapterId, {
       publishFlag: false,
     });
-    const chapters = await chapterRepository.getPublishChapters(courseId);
+
+    // 講座のチャプターが0件になった場合、講座を非公開にする
+    const chapters = await this.chapterRepository.getPublishChapters(courseId);
     if (chapters.length === 0) {
-      await courseRepository.updateCourse(courseId, {
+      await this.courseRepository.updateCourse(courseId, {
         publishFlag: false,
       });
     }
@@ -287,28 +276,30 @@ export class ChapterUseCase {
    * @param chapterId
    */
   async publishChapter(courseId: string, chapterId: string) {
-    const chapterRepository = new ChapterRepository(this.db);
-    const courseRepository = new CourseRepository(this.db);
-    const muxDataRepository = new MuxDataRepository(this.db);
-
-    const existsCourse = await courseRepository.checkCourseExists(courseId);
+    // 講座の存在チェック
+    const existsCourse = await this.courseRepository.checkCourseExists(courseId);
     if (!existsCourse) {
       throw new CourseNotFoundError();
     }
-    const existsChapter = await chapterRepository.checkChapterExists(chapterId);
+
+    // チャプターの存在チェック
+    const existsChapter = await this.chapterRepository.checkChapterExists(chapterId);
     if (!existsChapter) {
       throw new ChapterNotFoundError();
     }
-    const existsMuxData = await muxDataRepository.checkMuxDataExists(chapterId);
+
+    // MuxDataの存在チェック
+    const existsMuxData = await this.muxDataRepository.checkMuxDataExists(chapterId);
     if (!existsMuxData) {
       throw new MuxDataNotFoundError();
     }
-    const data = await chapterRepository.getChapter(chapterId);
+
+    const data = await this.chapterRepository.getChapter(chapterId);
     if (!data.chapter.title || !data.chapter.description || !data.chapter.videoUrl) {
       throw new ChapterRequiredFieldsEmptyError();
     }
 
-    const chapter = await chapterRepository.updateChapter(chapterId, {
+    const chapter = await this.chapterRepository.updateChapter(chapterId, {
       publishFlag: true,
     });
     return chapter;

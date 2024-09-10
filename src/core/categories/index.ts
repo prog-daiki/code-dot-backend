@@ -66,11 +66,10 @@ Category.put(
   zValidator("json", insertCategorySchema.pick({ name: true })),
   zValidator("param", z.object({ category_id: z.string() })),
   async (c) => {
+    const { category_id: categoryId } = c.req.valid("param");
+    const validatedData = c.req.valid("json");
+    const categoryUseCase = c.get("categoryUseCase");
     try {
-      const { category_id: categoryId } = c.req.valid("param");
-      const validatedData = c.req.valid("json");
-      const db = getDbConnection(c.env.DATABASE_URL);
-      const categoryUseCase = new CategoryUseCase(db);
       const category = await categoryUseCase.updateCategory(categoryId, validatedData.name);
       return c.json(category);
     } catch (error) {
@@ -90,10 +89,9 @@ Category.delete(
   validateAdmin,
   zValidator("param", z.object({ category_id: z.string() })),
   async (c) => {
+    const { category_id: categoryId } = c.req.valid("param");
+    const categoryUseCase = c.get("categoryUseCase");
     try {
-      const { category_id: categoryId } = c.req.valid("param");
-      const db = getDbConnection(c.env.DATABASE_URL);
-      const categoryUseCase = new CategoryUseCase(db);
       const category = await categoryUseCase.deleteCategory(categoryId);
       return c.json(category);
     } catch (error) {
