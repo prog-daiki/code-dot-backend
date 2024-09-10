@@ -150,30 +150,6 @@ export class ChapterUseCase {
   }
 
   /**
-   * 講座のチャプターのアクセス権を更新する
-   * @param chapterId
-   * @param freeFlag
-   * @param courseId
-   * @returns
-   */
-  async updateChapterAccess(freeFlag: boolean, courseId: string, chapterId: string) {
-    // 講座の存在チェック
-    const existsCourse = await this.courseRepository.checkCourseExists(courseId);
-    if (!existsCourse) {
-      throw new CourseNotFoundError();
-    }
-
-    // チャプターの存在チェック
-    const existsChapter = await this.chapterRepository.checkChapterExists(chapterId);
-    if (!existsChapter) {
-      throw new ChapterNotFoundError();
-    }
-
-    const chapter = await this.chapterRepository.updateChapter(chapterId, { freeFlag });
-    return chapter;
-  }
-
-  /**
    * 講座のチャプターの動画を更新する
    * @param videoUrl
    * @param courseId

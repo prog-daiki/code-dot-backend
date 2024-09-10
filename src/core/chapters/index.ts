@@ -185,38 +185,6 @@ Chapter.put(
 );
 
 /**
- * チャプターアクセス編集API
- */
-Chapter.put(
-  "/:chapter_id/access",
-  validateAdmin,
-  zValidator("param", z.object({ chapter_id: z.string(), course_id: z.string() })),
-  zValidator("json", insertChapterSchema.pick({ freeFlag: true })),
-  async (c) => {
-    try {
-      const { course_id: courseId, chapter_id: chapterId } = c.req.valid("param");
-      const validatedData = c.req.valid("json");
-      const db = getDbConnection(c.env.DATABASE_URL);
-      const chapterUseCase = new ChapterUseCase(db);
-      const chapter = await chapterUseCase.updateChapterAccess(
-        validatedData!.freeFlag!,
-        courseId,
-        chapterId,
-      );
-      return c.json(chapter);
-    } catch (error) {
-      if (error instanceof CourseNotFoundError) {
-        return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
-      }
-      if (error instanceof ChapterNotFoundError) {
-        return c.json({ error: Messages.MSG_ERR_003(Entity.CHAPTER) }, 404);
-      }
-      return HandleError(c, error, "チャプターアクセス編集エラー");
-    }
-  },
-);
-
-/**
  * チャプター動画編集API
  */
 Chapter.put(
