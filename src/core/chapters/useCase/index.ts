@@ -271,28 +271,30 @@ export class ChapterUseCase {
    * @param chapterId
    */
   async publishChapter(courseId: string, chapterId: string) {
-    const chapterRepository = new ChapterRepository(this.db);
-    const courseRepository = new CourseRepository(this.db);
-    const muxDataRepository = new MuxDataRepository(this.db);
-
-    const existsCourse = await courseRepository.checkCourseExists(courseId);
+    // 講座の存在チェック
+    const existsCourse = await this.courseRepository.checkCourseExists(courseId);
     if (!existsCourse) {
       throw new CourseNotFoundError();
     }
-    const existsChapter = await chapterRepository.checkChapterExists(chapterId);
+
+    // チャプターの存在チェック
+    const existsChapter = await this.chapterRepository.checkChapterExists(chapterId);
     if (!existsChapter) {
       throw new ChapterNotFoundError();
     }
-    const existsMuxData = await muxDataRepository.checkMuxDataExists(chapterId);
+
+    // MuxDataの存在チェック
+    const existsMuxData = await this.muxDataRepository.checkMuxDataExists(chapterId);
     if (!existsMuxData) {
       throw new MuxDataNotFoundError();
     }
-    const data = await chapterRepository.getChapter(chapterId);
+
+    const data = await this.chapterRepository.getChapter(chapterId);
     if (!data.chapter.title || !data.chapter.description || !data.chapter.videoUrl) {
       throw new ChapterRequiredFieldsEmptyError();
     }
 
-    const chapter = await chapterRepository.updateChapter(chapterId, {
+    const chapter = await this.chapterRepository.updateChapter(chapterId, {
       publishFlag: true,
     });
     return chapter;

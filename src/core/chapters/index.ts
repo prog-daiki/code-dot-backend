@@ -273,10 +273,9 @@ Chapter.put(
   validateAdmin,
   zValidator("param", z.object({ chapter_id: z.string(), course_id: z.string() })),
   async (c) => {
+    const { course_id: courseId, chapter_id: chapterId } = c.req.valid("param");
+    const chapterUseCase = c.get("chapterUseCase");
     try {
-      const { course_id: courseId, chapter_id: chapterId } = c.req.valid("param");
-      const db = getDbConnection(c.env.DATABASE_URL);
-      const chapterUseCase = new ChapterUseCase(db);
       const chapter = await chapterUseCase.publishChapter(courseId, chapterId);
       return c.json(chapter);
     } catch (error) {
