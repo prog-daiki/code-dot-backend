@@ -179,4 +179,34 @@ export class CourseRepository {
     const [data] = await this.db.delete(course).where(eq(course.id, courseId)).returning();
     return data;
   }
+
+  /**
+   * 購入済み講座一覧を取得する
+   * @param userId ユーザーID
+   * @returns 購入済み講座一覧
+   */
+  async getPurchaseCourses(userId: string) {
+    const data = await this.db
+      .select({
+        course,
+        chapters: sql<(typeof chapter)[]>`
+          json_agg(
+            json_build_object(
+              'id', ${chapter.id},
+              'title', ${chapter.title},
+              'description', ${chapter.description},
+              'position', ${chapter.position},
+              'isPublished', ${chapter.publishFlag}
+            )
+          ) filter (where ${chapter.id} is not null)
+        `.as("chapters"),
+      })
+      .from(course)
+      .leftJoin(chapter, eq(course.id, chapter.courseId))
+      .leftJoin(purchase, eq(course.id, purchase.courseId))
+      .where(eq(purchase.userId, userId))
+      .groupBy(course.id, purchase.createDate)
+      .orderBy(desc(purchase.createDate));
+    return data;
+  }
 }

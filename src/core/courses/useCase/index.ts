@@ -332,4 +332,14 @@ export class CourseUseCase {
     });
     return session.url;
   }
+
+  /**
+   * 購入済み講座一覧を取得する
+   * @param userId ユーザーID
+   * @returns 購入済み講座一覧
+   */
+  async getPurchaseCourses(userId: string) {
+    const courses = await this.courseRepository.getPurchaseCourses(userId);
+    return courses;
+  }
 }

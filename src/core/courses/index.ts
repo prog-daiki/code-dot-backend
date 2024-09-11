@@ -43,6 +43,20 @@ Course.get("/", validateAdmin, async (c) => {
 });
 
 /**
+ * 購入済み講座一覧取得API
+ */
+Course.get("/purchased", validateAuth, async (c) => {
+  const auth = getAuth(c);
+  const courseUseCase = c.get("courseUseCase");
+  try {
+    const courses = await courseUseCase.getPurchaseCourses(auth!.userId!);
+    return c.json(courses);
+  } catch (error) {
+    return HandleError(c, error, "購入済み講座一覧取得エラー");
+  }
+});
+
+/**
  * 公開講座一覧取得API
  */
 Course.get(
