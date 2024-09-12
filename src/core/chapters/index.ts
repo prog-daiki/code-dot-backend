@@ -16,9 +16,16 @@ import { MuxDataNotFoundError } from "../../error/MuxDataNotFoundError";
 const Chapter = new Hono<{
   Bindings: Env;
   Variables: {
+    db: ReturnType<typeof getDbConnection>;
     chapterUseCase: ChapterUseCase;
   };
 }>();
+Chapter.use("*", async (c, next) => {
+  const db = getDbConnection(c.env.DATABASE_URL);
+  c.set("db", db);
+  c.set("chapterUseCase", new ChapterUseCase(db));
+  await next();
+});
 
 /**
  * チャプター一覧取得API

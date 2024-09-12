@@ -189,6 +189,7 @@ export class CourseRepository {
     const data = await this.db
       .select({
         course,
+        category,
         chapters: sql<(typeof chapter)[]>`
           json_agg(
             json_build_object(
@@ -200,12 +201,14 @@ export class CourseRepository {
             )
           ) filter (where ${chapter.id} is not null)
         `.as("chapters"),
+        purchased: sql<boolean>`true`.as("purchased"),
       })
       .from(course)
       .leftJoin(chapter, eq(course.id, chapter.courseId))
       .leftJoin(purchase, eq(course.id, purchase.courseId))
+      .leftJoin(category, eq(course.categoryId, category.id))
       .where(eq(purchase.userId, userId))
-      .groupBy(course.id, purchase.createDate)
+      .groupBy(course.id, purchase.createDate, category.id)
       .orderBy(desc(purchase.createDate));
     return data;
   }
