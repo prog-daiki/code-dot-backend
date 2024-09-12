@@ -279,6 +279,30 @@ Course.put(
 );
 
 /**
+ * 講座ソースコード編集API
+ */
+Course.put(
+  "/:course_id/source_url",
+  validateAdmin,
+  zValidator("json", insertCourseSchema.pick({ sourceUrl: true })),
+  zValidator("param", z.object({ course_id: z.string() })),
+  async (c) => {
+    const validatedData = c.req.valid("json");
+    const { course_id: courseId } = c.req.valid("param");
+    const courseUseCase = c.get("courseUseCase");
+    try {
+      const course = await courseUseCase.updateCourseSourceUrl(courseId, validatedData.sourceUrl);
+      return c.json(course);
+    } catch (error) {
+      if (error instanceof CourseNotFoundError) {
+        return c.json({ error: Messages.MSG_ERR_003(Entity.COURSE) }, 404);
+      }
+      return HandleError(c, error, "講座ソースコード編集エラー");
+    }
+  },
+);
+
+/**
  * 講座非公開API
  */
 Course.put(

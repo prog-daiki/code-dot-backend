@@ -191,6 +191,17 @@ export class CourseUseCase {
     return course;
   }
 
+  async updateCourseSourceUrl(courseId: string, sourceUrl: string) {
+    // 講座の存在チェック
+    const existsCourse = await this.courseRepository.checkCourseExists(courseId);
+    if (!existsCourse) {
+      throw new CourseNotFoundError();
+    }
+
+    const course = await this.courseRepository.updateCourse(courseId, { sourceUrl });
+    return course;
+  }
+
   /**
    * 講座を非公開にする
    * @param courseId 講座ID
